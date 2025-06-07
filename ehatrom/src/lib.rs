@@ -213,7 +213,6 @@ pub fn read_from_eeprom_i2c(
     addr: u16,
     offset: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use std::io::Write;
     let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
     // Сначала отправляем 2 байта offset (старший, младший)
     let offset_bytes = [(offset >> 8) as u8, (offset & 0xFF) as u8];
