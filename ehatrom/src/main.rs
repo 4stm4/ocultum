@@ -14,7 +14,7 @@ fn main() {
     }
 
     // Путь к I2C устройству и адрес EEPROM
-    let dev_path = "/dev/i2c-1";
+    let dev_path = "/dev/i2c-0";
     let addr = 0x50; // Стандартный адрес HAT EEPROM
     // Обычно EEPROM HAT 256 байт, но можно увеличить при необходимости
     let len = 256;
