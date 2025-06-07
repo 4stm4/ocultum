@@ -191,12 +191,18 @@ pub fn write_to_eeprom_i2c(
     addr: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
-    // EEPROM HAT требует 2-байтовый offset (адрес), затем байт данных
-    for (i, byte) in data.iter().enumerate() {
-        let offset = i as u16;
-        let buf = [(offset >> 8) as u8, (offset & 0xFF) as u8, *byte];
+    // EEPROM HAT: use page write (16 bytes per page) with 2-byte offset
+    let page_size = 16;
+    let mut offset = 0u16;
+    while (offset as usize) < data.len() {
+        let end = ((offset as usize + page_size).min(data.len()));
+        let mut buf = Vec::with_capacity(2 + page_size);
+        buf.push((offset >> 8) as u8);
+        buf.push((offset & 0xFF) as u8);
+        buf.extend_from_slice(&data[offset as usize..end]);
         dev.write(&buf)?;
-        std::thread::sleep(std::time::Duration::from_millis(5));
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        offset += (end - offset as usize) as u16;
     }
     Ok(())
 }
