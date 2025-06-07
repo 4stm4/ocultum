@@ -24,7 +24,7 @@ pub enum AtomType {
     GpioMapBank0 = 0x02,
     DtBlob = 0x03,
     GpioMapBank1 = 0x04,
-    // Можно добавить другие типы атомов при необходимости
+    Unknown,
 }
 
 #[repr(C, packed)]
@@ -112,7 +112,9 @@ impl Eeprom {
                         gpio_map_bank1 = Some(unsafe { read_unaligned(data[offset..].as_ptr() as *const GpioMapAtom) });
                     }
                 }
-                _ => {}
+                AtomType::Unknown => {
+                    // Неизвестный тип атома — пропускаем
+                }
             }
             offset += atom_header.dlen as usize;
         }
@@ -138,7 +140,7 @@ impl From<u8> for AtomType {
             0x02 => AtomType::GpioMapBank0,
             0x03 => AtomType::DtBlob,
             0x04 => AtomType::GpioMapBank1,
-            _ => AtomType::VendorInfo, // fallback, можно заменить на Unknown
+            _ => AtomType::Unknown,
         }
     }
 }
