@@ -1,3 +1,4 @@
+use core::fmt;
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
 
@@ -182,6 +183,22 @@ impl From<u8> for AtomType {
             0x04 => AtomType::GpioMapBank1,
             _ => AtomType::Unknown,
         }
+    }
+}
+
+impl fmt::Debug for VendorInfoAtom {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let vendor_str = String::from_utf8_lossy(&self.vendor)
+            .trim_end_matches('\0')
+            .to_string();
+        let product_str = String::from_utf8_lossy(&self.product)
+            .trim_end_matches('\0')
+            .to_string();
+        write!(
+            f,
+            "VendorInfoAtom {{ vendor_id: {}, product_id: {}, product_ver: {}, vendor: \"{}\", product: \"{}\", uuid: {:?} }}",
+            self.vendor_id, self.product_id, self.product_ver, vendor_str, product_str, self.uuid
+        )
     }
 }
 
