@@ -1,8 +1,6 @@
 fn main() {
     // Пример: чтение EEPROM из файла или массива байт
     use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, write_to_eeprom_i2c, read_from_eeprom_i2c};
-    use i2cdev::core::*;
-    use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
     use std::thread::sleep;
     use std::time::Duration;
 
