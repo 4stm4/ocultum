@@ -7,7 +7,7 @@ fn main() {
     use std::time::Duration;
 
     // --- Формируем структуру для записи ---
-    let eeprom = Eeprom {
+    let mut eeprom = Eeprom {
         header: ehatrom::EepromHeader {
             signature: *b"R-Pi",
             version: 1, // первая версия формата
@@ -37,6 +37,7 @@ fn main() {
         dt_blob: None,
         gpio_map_bank1: None,
     };
+    eeprom.update_header();
     // Можно добавить другие атомы через методы eeprom.add_*
     // --- Сериализация ---
     let eeprom_bytes = unsafe {

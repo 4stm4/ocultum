@@ -152,7 +152,7 @@ impl Eeprom {
         self.update_header();
     }
     /// Пересчитать numatoms и eeplen после добавления атомов
-    fn update_header(&mut self) {
+    pub fn update_header(&mut self) {
         let mut numatoms = 2; // VendorInfo и GPIO bank0 всегда есть
         let mut eeplen = core::mem::size_of::<EepromHeader>()
             + core::mem::size_of::<AtomHeader>() * 2
