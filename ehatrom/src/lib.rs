@@ -124,6 +124,11 @@ impl Eeprom {
             gpio_map_bank1,
         })
     }
+
+    /// Проверяет, содержит ли EEPROM валидные данные (по сигнатуре и версии)
+    pub fn is_valid(&self) -> bool {
+        self.header.signature == *b"R-Pi" && self.header.version != 0
+    }
 }
 
 impl From<u8> for AtomType {
