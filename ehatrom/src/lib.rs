@@ -195,7 +195,7 @@ pub fn write_to_eeprom_i2c(
     let page_size = 16;
     let mut offset = 0u16;
     while (offset as usize) < data.len() {
-        let end = ((offset as usize + page_size).min(data.len()));
+        let end = (offset as usize + page_size).min(data.len());
         let mut buf = Vec::with_capacity(2 + page_size);
         buf.push((offset >> 8) as u8);
         buf.push((offset & 0xFF) as u8);
