@@ -1,19 +1,10 @@
 fn main() {
     // Пример: чтение EEPROM из файла или массива байт
-    use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, write_to_eeprom_i2c};
+    use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, write_to_eeprom_i2c, read_from_eeprom_i2c};
     use i2cdev::core::*;
     use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
     use std::thread::sleep;
     use std::time::Duration;
-
-    fn read_eeprom_i2c(dev_path: &str, addr: u16, len: usize) -> Result<Vec<u8>, LinuxI2CError> {
-        let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
-        let mut buf = vec![0u8; len];
-        // Для EEPROM HAT обычно читаем с 0 адреса
-        dev.smbus_write_byte(0x00)?; // Установить адрес чтения в 0
-        dev.read(&mut buf)?;
-        Ok(buf)
-    }
 
     // --- Формируем структуру для записи ---
     let eeprom = Eeprom {
@@ -92,21 +83,21 @@ fn main() {
     sleep(Duration::from_millis(10));
     // --- Чтение и проверка ---
     let len = eeprom_bytes.len();
-    let data = match read_eeprom_i2c(dev_path, addr, len) {
-        Ok(d) => {
+    let mut data = vec![0u8; len];
+    match read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
+        Ok(_) => {
             // Для отладки: вывести первые 16 байт в hex
             print!("EEPROM HEX: ");
-            for b in d.iter().take(16) {
+            for b in data.iter().take(16) {
                 print!("{:02X} ", b);
             }
             println!("");
-            d
         },
         Err(e) => {
             eprintln!("Ошибка чтения с I2C: {}", e);
             return;
         }
-    };
+    }
     match Eeprom::from_bytes(&data) {
         Ok(eeprom) => {
             if eeprom.is_valid() {
