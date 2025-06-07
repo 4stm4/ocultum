@@ -191,9 +191,10 @@ pub fn write_to_eeprom_i2c(
     addr: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
-    // EEPROM HAT требует сначала offset, потом байт
+    // EEPROM HAT требует 2-байтовый offset (адрес), затем байт данных
     for (i, byte) in data.iter().enumerate() {
-        let buf = [i as u8, *byte];
+        let offset = i as u16;
+        let buf = [(offset >> 8) as u8, (offset & 0xFF) as u8, *byte];
         dev.write(&buf)?;
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
