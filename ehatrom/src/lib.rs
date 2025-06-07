@@ -187,6 +187,7 @@ pub fn write_to_eeprom_i2c(
     dev_path: &str,
     addr: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use i2cdev::core::I2CDevice;
     use i2cdev::linux::LinuxI2CDevice;
     let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
     // Обычно EEPROM требует по-байтовой или постраничной записи, но для простоты пишем всё сразу
