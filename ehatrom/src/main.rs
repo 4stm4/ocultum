@@ -16,7 +16,7 @@ fn main() {
     }
 
     // --- Формируем структуру для записи ---
-    let mut eeprom = Eeprom {
+    let eeprom = Eeprom {
         header: ehatrom::EepromHeader {
             signature: *b"R-Pi",
             version: 1, // первая версия формата
@@ -93,7 +93,15 @@ fn main() {
     // --- Чтение и проверка ---
     let len = eeprom_bytes.len();
     let data = match read_eeprom_i2c(dev_path, addr, len) {
-        Ok(d) => d,
+        Ok(d) => {
+            // Для отладки: вывести первые 16 байт в hex
+            print!("EEPROM HEX: ");
+            for b in d.iter().take(16) {
+                print!("{:02X} ", b);
+            }
+            println!("");
+            d
+        },
         Err(e) => {
             eprintln!("Ошибка чтения с I2C: {}", e);
             return;
