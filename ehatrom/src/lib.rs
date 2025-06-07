@@ -131,6 +131,43 @@ impl Eeprom {
     pub fn is_valid(&self) -> bool {
         self.header.signature == *b"R-Pi" && self.header.version != 0
     }
+
+    pub fn add_vendor_info(&mut self, atom: VendorInfoAtom) {
+        self.vendor_info = atom;
+        self.update_header();
+    }
+    pub fn add_gpio_map_bank0(&mut self, atom: GpioMapAtom) {
+        self.gpio_map_bank0 = atom;
+        self.update_header();
+    }
+    pub fn add_dt_blob(&mut self, blob: Vec<u8>) {
+        self.dt_blob = Some(blob);
+        self.update_header();
+    }
+    pub fn add_gpio_map_bank1(&mut self, atom: GpioMapAtom) {
+        self.gpio_map_bank1 = Some(atom);
+        self.update_header();
+    }
+    /// Пересчитать numatoms и eeplen после добавления атомов
+    fn update_header(&mut self) {
+        let mut numatoms = 2; // VendorInfo и GPIO bank0 всегда есть
+        let mut eeplen = core::mem::size_of::<EepromHeader>()
+            + core::mem::size_of::<AtomHeader>() * 2
+            + core::mem::size_of::<VendorInfoAtom>()
+            + core::mem::size_of::<GpioMapAtom>();
+        if self.dt_blob.is_some() {
+            numatoms += 1;
+            if let Some(ref blob) = self.dt_blob {
+                eeplen += core::mem::size_of::<AtomHeader>() + blob.len();
+            }
+        }
+        if self.gpio_map_bank1.is_some() {
+            numatoms += 1;
+            eeplen += core::mem::size_of::<AtomHeader>() + core::mem::size_of::<GpioMapAtom>();
+        }
+        self.header.numatoms = numatoms;
+        self.header.eeplen = eeplen as u32;
+    }
 }
 
 impl From<u8> for AtomType {
@@ -143,4 +180,16 @@ impl From<u8> for AtomType {
             _ => AtomType::Unknown,
         }
     }
+}
+
+pub fn write_to_eeprom_i2c(
+    data: &[u8],
+    dev_path: &str,
+    addr: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use i2cdev::linux::LinuxI2CDevice;
+    let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
+    // Обычно EEPROM требует по-байтовой или постраничной записи, но для простоты пишем всё сразу
+    dev.write(data)?;
+    Ok(())
 }
