@@ -81,6 +81,23 @@ let api_key = b"api_key:SECRET123456".to_vec();
 eeprom.add_custom_atom(0x81, api_key);
 ```
 
+## Setting EEPROM Version
+
+By default, the version is set to 1. To set a custom version (for example, 2):
+
+```rust
+let mut eeprom = Eeprom { header: Default::default(), /* ... */ };
+eeprom.set_version(2); // set version to 2
+```
+
+Or, using the builder pattern:
+
+```rust
+let mut eeprom = Eeprom { header: Default::default(), /* ... */ };
+// ... fill other fields ...
+eeprom.set_version(3); // set version to 3
+```
+
 ## pins field format
 Each byte of the `pins` array defines the function of the corresponding GPIO:
 - 0x00 — unused
