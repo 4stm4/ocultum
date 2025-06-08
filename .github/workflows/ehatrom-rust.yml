@@ -19,6 +19,8 @@ jobs:
         with:
           toolchain: nightly
           override: true
+      - name: Set nightly as default
+        run: rustup default nightly
       - name: Install rustfmt for nightly
         run: rustup component add --toolchain nightly rustfmt
       - name: Check formatting
@@ -57,6 +59,8 @@ jobs:
         with:
           toolchain: nightly
           override: true
+      - name: Set nightly as default
+        run: rustup default nightly
       - name: Build release
         run: cargo build --release --workspace
       - name: Upload release artifacts
