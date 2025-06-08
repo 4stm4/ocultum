@@ -336,6 +336,10 @@ impl Eeprom {
         }
         bytes
     }
+
+    pub fn set_version(&mut self, version: u8) {
+        self.header.version = version;
+    }
 }
 
 impl From<u8> for AtomType {
