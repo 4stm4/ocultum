@@ -78,6 +78,20 @@ fn main() {
                 println!("EEPROM header: {:?}", eeprom.header);
                 println!("Vendor info: {:?}", eeprom.vendor_info);
                 println!("GPIO map bank0: {:?}", eeprom.gpio_map_bank0);
+                if !eeprom.custom_atoms.is_empty() {
+                    println!("Custom atoms:");
+                    for (atom_type, data) in &eeprom.custom_atoms {
+                        print!("  Type 0x{:02X}: ", atom_type);
+                        for b in data {
+                            print!("{:02X} ", b);
+                        }
+                        // Также можно вывести строкой, если данные текстовые:
+                        if let Ok(s) = std::str::from_utf8(data) {
+                            print!(" (as string: \"{}\")", s);
+                        }
+                        println!();
+                    }
+                }
             } else {
                 println!("EEPROM is empty or uninitialized (invalid signature/version)");
             }
