@@ -1,4 +1,5 @@
 use core::fmt;
+use crc32fast::Hasher;
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
 
@@ -77,13 +78,42 @@ pub struct DtBlobAtom {
     // Следом идут данные blob (dlen байт)
 }
 
+#[repr(C, packed)]
+#[derive(Clone, Copy)]
+pub struct CustomAtom<const N: usize> {
+    pub atom_type: u8, // Пользовательский тип атома (>= 0x80)
+    pub data: [u8; N], // Пользовательские данные
+}
+
+impl<const N: usize> fmt::Debug for CustomAtom<N> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Безопасно копируем packed-поле data
+        let self_ptr = self as *const Self as *const u8;
+        let data_offset = core::mem::size_of::<u8>();
+        let data_ptr = unsafe { self_ptr.add(data_offset) } as *const u8;
+        let mut data = [0u8; N];
+        unsafe {
+            core::ptr::copy_nonoverlapping(data_ptr, data.as_mut_ptr(), N);
+        }
+        write!(f, "CustomAtom {{ atom_type: 0x{:02X}, data: {:?} }}", self.atom_type, &data[..])
+    }
+}
+
+pub enum EepromAtom {
+    VendorInfo(VendorInfoAtom),
+    GpioMapBank0(GpioMapAtom),
+    DtBlob(Vec<u8>),
+    GpioMapBank1(GpioMapAtom),
+    Custom(Vec<u8>, u8), // (данные, тип)
+}
+
 pub struct Eeprom {
     pub header: EepromHeader,
     pub vendor_info: VendorInfoAtom,
     pub gpio_map_bank0: GpioMapAtom,
     pub dt_blob: Option<Vec<u8>>, // DT blob может быть переменной длины
     pub gpio_map_bank1: Option<GpioMapAtom>, // Опционально
-    // Можно добавить вектор для других атомов, если потребуется
+    pub custom_atoms: Vec<(u8, Vec<u8>)>, // (atom_type, data)
 }
 
 // Можно добавить функции для парсинга и работы с этими структурами
@@ -149,6 +179,7 @@ impl Eeprom {
             gpio_map_bank0: gpio_map_bank0.ok_or("GpioMapBank0 атом не найден")?,
             dt_blob,
             gpio_map_bank1,
+            custom_atoms: Vec::new(),
         })
     }
 
@@ -173,6 +204,10 @@ impl Eeprom {
         self.gpio_map_bank1 = Some(atom);
         self.update_header();
     }
+    pub fn add_custom_atom(&mut self, atom_type: u8, data: Vec<u8>) {
+        self.custom_atoms.push((atom_type, data));
+        self.update_header();
+    }
     /// Пересчитать numatoms и eeplen после добавления атомов
     pub fn update_header(&mut self) {
         let mut numatoms = 2; // VendorInfo и GPIO bank0 всегда есть
@@ -190,8 +225,31 @@ impl Eeprom {
             numatoms += 1;
             eeplen += core::mem::size_of::<AtomHeader>() + core::mem::size_of::<GpioMapAtom>();
         }
+        for (_atom_type, data) in &self.custom_atoms {
+            numatoms += 1;
+            eeplen += core::mem::size_of::<AtomHeader>() + data.len();
+        }
         self.header.numatoms = numatoms;
         self.header.eeplen = eeplen as u32;
+    }
+
+    /// Сериализация с добавлением CRC32 в конец (4 байта LE)
+    pub fn serialize_with_crc(&self) -> Vec<u8> {
+        let mut data = self.serialize();
+        let mut hasher = Hasher::new();
+        hasher.update(&data);
+        let crc = hasher.finalize();
+        data.extend_from_slice(&crc.to_le_bytes());
+        data
+    }
+    /// Проверка CRC32 (ожидается, что последние 4 байта — CRC32 LE)
+    pub fn verify_crc(data: &[u8]) -> bool {
+        if data.len() < 4 { return false; }
+        let (content, crc_bytes) = data.split_at(data.len() - 4);
+        let mut hasher = Hasher::new();
+        hasher.update(content);
+        let crc = hasher.finalize();
+        crc_bytes == crc.to_le_bytes()
     }
 }
 
@@ -241,4 +299,27 @@ pub fn read_from_eeprom_i2c(
     dev.write(&offset_bytes)?;
     dev.read(buf)?;
     Ok(())
+}
+
+impl VendorInfoAtom {
+    /// Создаёт VendorInfoAtom из строк (автоматически обрезает/дополняет нулями)
+    pub fn new(vendor_id: u16, product_id: u16, product_ver: u16, vendor: &str, product: &str, uuid: [u8; 16]) -> Self {
+        let mut vendor_arr = [0u8; 16];
+        let mut product_arr = [0u8; 16];
+        let vendor_bytes = vendor.as_bytes();
+        let product_bytes = product.as_bytes();
+        let vendor_len = vendor_bytes.len().min(15); // оставляем место под null-terminator
+        let product_len = product_bytes.len().min(15);
+        vendor_arr[..vendor_len].copy_from_slice(&vendor_bytes[..vendor_len]);
+        product_arr[..product_len].copy_from_slice(&product_bytes[..product_len]);
+        // null-terminator уже есть, т.к. массивы заполнены нулями
+        VendorInfoAtom {
+            vendor_id,
+            product_id,
+            product_ver,
+            vendor: vendor_arr,
+            product: product_arr,
+            uuid,
+        }
+    }
 }
