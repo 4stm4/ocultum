@@ -31,6 +31,7 @@ fn main() {
         custom_atoms: Vec::new(),
     };
     eeprom.update_header();
+    eeprom.header.signature = *b"R-Pi";
     // You can add other atoms via eeprom.add_*
     // --- Serialization ---
     // Serialization to bytes
@@ -52,7 +53,7 @@ fn main() {
     // EEPROM may require a delay after writing
     sleep(Duration::from_millis(10));
     // --- Read and check ---
-    let len = bytes.len();
+    let len = bytes_with_crc.len();
     let mut data = vec![0u8; len];
     match read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
         Ok(_) => {
@@ -68,7 +69,7 @@ fn main() {
             return;
         }
     }
-    match Eeprom::from_bytes(&data) {
+    match Eeprom::from_bytes(&data[..data.len()-4]) {
         Ok(eeprom) => {
             if eeprom.is_valid() {
                 println!("EEPROM header: {:?}", eeprom.header);
