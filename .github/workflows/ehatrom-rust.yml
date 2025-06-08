@@ -33,6 +33,8 @@ jobs:
         run: cargo build --workspace --all-targets --verbose
       - name: Run tests
         run: cargo test --workspace --all-targets --verbose
+      - name: Install grcov
+        run: cargo +nightly install grcov
       - name: Generate code coverage
         run: |
           export CARGO_INCREMENTAL=0
