@@ -36,7 +36,7 @@ jobs:
           export CARGO_INCREMENTAL=0
           export RUSTFLAGS="-Zinstrument-coverage"
           export LLVM_PROFILE_FILE="ehatrom-%p-%m.profraw"
-          cargo test --workspace --all-targets --no-fail-fast -- --nocapture
+          cargo +nightly test --workspace --all-targets --no-fail-fast -- --nocapture
           grcov . -s . -t lcov --llvm --branch --ignore-not-existing -o lcov.info || true
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
