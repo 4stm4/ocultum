@@ -36,7 +36,7 @@ fn main() {
     // You can add other atoms via eeprom.add_*
     // --- Serialization ---
     // Serialization to bytes
-    let bytes = eeprom.serialize();
+    // let bytes = eeprom.serialize(); // (unused variable, removed)
 
     // Serialization with CRC32
     let bytes_with_crc = eeprom.serialize_with_crc();
