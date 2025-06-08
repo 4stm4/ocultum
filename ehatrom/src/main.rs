@@ -32,6 +32,7 @@ fn main() {
     };
     eeprom.update_header();
     eeprom.header.signature = *b"R-Pi";
+    eeprom.header.version = 1;
     // You can add other atoms via eeprom.add_*
     // --- Serialization ---
     // Serialization to bytes
