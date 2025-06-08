@@ -68,15 +68,13 @@ impl fmt::Debug for VendorInfoAtom {
         let product_str = String::from_utf8_lossy(&self.product)
             .trim_end_matches('\0')
             .to_string();
-        // Копируем числовые поля во временные переменные для безопасного доступа
         let vendor_id = self.vendor_id;
         let product_id = self.product_id;
         let product_ver = self.product_ver;
         let uuid = self.uuid;
         write!(
             f,
-            "VendorInfoAtom {{ vendor_id: {}, product_id: {}, product_ver: {}, vendor: \"{}\", product: \"{}\", uuid: {:?} }}",
-            vendor_id, product_id, product_ver, vendor_str, product_str, uuid
+            "VendorInfoAtom {{ vendor_id: {vendor_id}, product_id: {product_id}, product_ver: {product_ver}, vendor: \"{vendor_str}\", product: \"{product_str}\", uuid: {uuid:?} }}"
         )
     }
 }
