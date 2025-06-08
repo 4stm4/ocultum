@@ -136,6 +136,7 @@ impl Eeprom {
         let mut gpio_map_bank0 = None;
         let mut dt_blob = None;
         let mut gpio_map_bank1 = None;
+        let mut custom_atoms = Vec::new();
         for _ in 0..header.numatoms {
             if data.len() < offset + size_of::<AtomHeader>() {
                 return Err("Недостаточно данных для AtomHeader");
@@ -168,7 +169,11 @@ impl Eeprom {
                     }
                 }
                 AtomType::Unknown => {
-                    // Неизвестный тип атома — пропускаем
+                    // Сохраняем пользовательский атом (тип и данные)
+                    let dlen = atom_header.dlen as usize;
+                    if dlen > 0 && data.len() >= offset + dlen {
+                        custom_atoms.push((atom_header.atom_type, data[offset..offset + dlen].to_vec()));
+                    }
                 }
             }
             offset += atom_header.dlen as usize;
@@ -179,7 +184,7 @@ impl Eeprom {
             gpio_map_bank0: gpio_map_bank0.ok_or("GpioMapBank0 атом не найден")?,
             dt_blob,
             gpio_map_bank1,
-            custom_atoms: Vec::new(),
+            custom_atoms,
         })
     }
 
