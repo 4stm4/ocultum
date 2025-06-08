@@ -6,13 +6,7 @@ fn main() {
 
     // --- Формируем структуру для записи ---
     let mut eeprom = Eeprom {
-        header: ehatrom::EepromHeader {
-            signature: *b"R-Pi",
-            version: 1, // первая версия формата
-            reserved: 0,
-            numatoms: 0, // будет пересчитано
-            eeplen: 0,   // будет пересчитано
-        },
+        header: Default::default(),
         vendor_info: VendorInfoAtom {
             vendor_id: 0x1234,
             product_id: 0x5678,
@@ -34,6 +28,7 @@ fn main() {
         gpio_map_bank0: GpioMapAtom { flags: 0, pins: [0; 28] },
         dt_blob: None,
         gpio_map_bank1: None,
+        custom_atoms: Vec::new(),
     };
     eeprom.update_header();
     // Можно добавить другие атомы через методы eeprom.add_*
