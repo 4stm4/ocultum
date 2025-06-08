@@ -1,16 +1,16 @@
 fn main() {
-    // Пример: чтение EEPROM из файла или массива байт
+    // Example: reading EEPROM from a file or byte array
     use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, write_to_eeprom_i2c, read_from_eeprom_i2c};
     use std::thread::sleep;
     use std::time::Duration;
 
-    // --- Формируем структуру для записи ---
+    // --- Build structure for writing ---
     let mut eeprom = Eeprom {
         header: Default::default(),
         vendor_info: VendorInfoAtom {
             vendor_id: 0x1234,
             product_id: 0x5678,
-            product_ver: 1, // версия продукта в разработке — обычно 1
+            product_ver: 1, // product version in development — usually 1
             vendor: {
                 let mut arr = [0u8; 16];
                 let s = b"4stm4";
@@ -31,11 +31,11 @@ fn main() {
         custom_atoms: Vec::new(),
     };
     eeprom.update_header();
-    // Можно добавить другие атомы через методы eeprom.add_*
-    // --- Сериализация ---
+    // You can add other atoms via eeprom.add_*
+    // --- Serialization ---
     let eeprom_bytes = unsafe {
-        // Примитивная сериализация: просто копируем память структур подряд
-        // Для production лучше использовать byteorder или zerocopy
+        // Primitive serialization: just copy struct memory sequentially
+        // For production, use byteorder or zerocopy
         let mut bytes = Vec::new();
         let header_ptr = &eeprom.header as *const _ as *const u8;
         bytes.extend_from_slice(std::slice::from_raw_parts(header_ptr, std::mem::size_of::<ehatrom::EepromHeader>()));
@@ -63,24 +63,24 @@ fn main() {
         bytes.extend_from_slice(std::slice::from_raw_parts(gpio_ptr, std::mem::size_of::<GpioMapAtom>()));
         bytes
     };
-    // --- Запись в EEPROM ---
+    // --- Write to EEPROM ---
     let dev_path = "/dev/i2c-0";
     let addr = 0x50;
     match write_to_eeprom_i2c(&eeprom_bytes, dev_path, addr) {
-        Ok(_) => println!("Данные успешно записаны в EEPROM!"),
+        Ok(_) => println!("Data successfully written to EEPROM!"),
         Err(e) => {
-            eprintln!("Ошибка записи в EEPROM: {}", e);
+            eprintln!("Error writing to EEPROM: {}", e);
             return;
         }
     }
-    // EEPROM может требовать задержку после записи
+    // EEPROM may require a delay after writing
     sleep(Duration::from_millis(10));
-    // --- Чтение и проверка ---
+    // --- Read and check ---
     let len = eeprom_bytes.len();
     let mut data = vec![0u8; len];
     match read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
         Ok(_) => {
-            // Для отладки: вывести первые 16 байт в hex
+            // For debugging: print first 16 bytes in hex
             print!("EEPROM HEX: ");
             for b in data.iter().take(16) {
                 print!("{:02X} ", b);
@@ -88,7 +88,7 @@ fn main() {
             println!("");
         },
         Err(e) => {
-            eprintln!("Ошибка чтения с I2C: {}", e);
+            eprintln!("Error reading from I2C: {}", e);
             return;
         }
     }
@@ -99,11 +99,11 @@ fn main() {
                 println!("Vendor info: {:?}", eeprom.vendor_info);
                 println!("GPIO map bank0: {:?}", eeprom.gpio_map_bank0);
             } else {
-                println!("EEPROM пустой или неинициализированный (signature/version невалидны)");
+                println!("EEPROM is empty or uninitialized (invalid signature/version)");
             }
         }
         Err(e) => {
-            eprintln!("Ошибка парсинга EEPROM: {}", e);
+            eprintln!("EEPROM parsing error: {}", e);
         }
     }
 }

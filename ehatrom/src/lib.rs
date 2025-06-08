@@ -4,7 +4,7 @@ use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct EepromHeader {
     pub signature: [u8; 4],  // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
     pub version: u8,         // Format version (0x01 for first version)
