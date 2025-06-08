@@ -91,7 +91,7 @@ fn test_serialize_and_deserialize() {
 
 #[test]
 fn test_crc_check() {
-    let mut eeprom = Eeprom {
+    let eeprom = Eeprom {
         header: Default::default(),
         vendor_info: make_vendor(),
         gpio_map_bank0: make_gpio(),

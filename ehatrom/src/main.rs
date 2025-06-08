@@ -63,7 +63,6 @@ fn main() {
                 for b in data.iter().take(16) {
                     print!("{:02X} ", b);
                 }
-                println!("");
             }
             Err(e) => {
                 eprintln!("Error reading from I2C: {}", e);
