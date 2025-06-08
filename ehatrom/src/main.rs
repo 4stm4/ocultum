@@ -47,7 +47,7 @@ fn main() {
         match ehatrom::write_to_eeprom_i2c(&bytes_with_crc, dev_path, addr) {
             Ok(_) => println!("Data successfully written to EEPROM!"),
             Err(e) => {
-                eprintln!("Error writing to EEPROM: {}", e);
+                eprintln!("Error writing to EEPROM: {e}");
                 return;
             }
         }
@@ -61,11 +61,11 @@ fn main() {
                 // For debugging: print first 16 bytes in hex
                 print!("EEPROM HEX: ");
                 for b in data.iter().take(16) {
-                    print!("{:02X} ", b);
+                    print!("{b:02X} ");
                 }
             }
             Err(e) => {
-                eprintln!("Error reading from I2C: {}", e);
+                eprintln!("Error reading from I2C: {e}");
                 return;
             }
         }
@@ -78,12 +78,12 @@ fn main() {
                     if !eeprom.custom_atoms.is_empty() {
                         println!("Custom atoms:");
                         for (atom_type, data) in &eeprom.custom_atoms {
-                            print!("  Type 0x{:02X}: ", atom_type);
+                            print!("  Type 0x{atom_type:02X}: ");
                             for b in data {
-                                print!("{:02X} ", b);
+                                print!("{b:02X} ");
                             }
                             if let Ok(s) = std::str::from_utf8(data) {
-                                print!(" (as string: \"{}\")", s);
+                                print!(" (as string: \"{s}\")");
                             }
                             println!();
                         }
@@ -93,7 +93,7 @@ fn main() {
                 }
             }
             Err(e) => {
-                eprintln!("EEPROM parsing error: {}", e);
+                eprintln!("EEPROM parsing error: {e}");
             }
         }
     }
