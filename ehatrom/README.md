@@ -105,6 +105,19 @@ Each byte of the `pins` array defines the function of the corresponding GPIO:
 - 0x02 — output
 - ... (see HAT EEPROM specification)
 
+## Platform Support
+
+- The core library (EEPROM structures, serialization, CRC, etc.) is **cross-platform** and works on any OS (Linux, macOS, Windows, etc.).
+- **I2C EEPROM read/write functions** (`write_to_eeprom_i2c`, `read_from_eeprom_i2c`) are available **only on Linux** (using the [i2cdev](https://crates.io/crates/i2cdev) crate).
+- On other platforms, you can use all parsing/serialization features, but direct I2C access is not available.
+
+## Dependencies
+
+- [crc32fast](https://crates.io/crates/crc32fast) — for CRC32 calculation
+- [i2cdev](https://crates.io/crates/i2cdev) — for I2C access (Linux only)
+
+See also: [update_and_run.md](./update_and_run.md) for usage automation.
+
 ## Links
 - [Official HAT EEPROM specification](https://github.com/raspberrypi/hats/blob/master/eeprom-format.md)
 

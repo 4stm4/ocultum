@@ -105,6 +105,19 @@ eeprom.set_version(3); // установить версию 3
 - 0x02 — выход
 - ... (см. спецификацию HAT EEPROM)
 
+## Поддержка платформ
+
+- Основная библиотека (структуры EEPROM, сериализация, CRC и т.д.) **кроссплатформенная** и работает на любой ОС (Linux, macOS, Windows и др.).
+- Функции работы с I2C EEPROM (`write_to_eeprom_i2c`, `read_from_eeprom_i2c`) доступны **только на Linux** (используется crate [i2cdev](https://crates.io/crates/i2cdev)).
+- На других платформах доступны все функции парсинга/сериализации, но прямой доступ к I2C недоступен.
+
+## Зависимости
+
+- [crc32fast](https://crates.io/crates/crc32fast) — вычисление CRC32
+- [i2cdev](https://crates.io/crates/i2cdev) — доступ к I2C (только Linux)
+
+См. также: [update_and_run.md](./update_and_run.md) для автоматизации запуска.
+
 ## Ссылки
 - [Официальная спецификация HAT EEPROM](https://github.com/raspberrypi/hats/blob/master/eeprom-format.md)
 
