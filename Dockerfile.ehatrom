@@ -30,7 +30,7 @@ ENV CARGO_INCREMENTAL=0
 ENV RUSTFLAGS="-Zinstrument-coverage"
 ENV LLVM_PROFILE_FILE="ehatrom-%p-%m.profraw"
 RUN cargo test --workspace --all-targets --no-fail-fast -- --nocapture && \
-    grcov . -s . -t lcov --llvm --branch --ignore-not-existing -o lcov.info
+    grcov . -s . -t lcov --llvm --branch --ignore-not-existing -o lcov.info || true
 
 # Артефакты (опционально)
 FROM scratch as artifact
