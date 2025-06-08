@@ -2,11 +2,9 @@
   4STM4
   ocultum
 */
-fn main() {
-    #[cfg(target_os = "linux")]
-    use ehatrom::{write_to_eeprom_i2c, read_from_eeprom_i2c};
-    use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
+use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
 
+fn main() {
     // --- Build structure for writing ---
     let mut eeprom = Eeprom {
         header: Default::default(),
@@ -36,16 +34,11 @@ fn main() {
     eeprom.update_header();
     // Добавление пользовательского атома (например, тип 0x80, данные "hello world")
     eeprom.add_custom_atom(0x80, b"hello world".to_vec());
-    // You can add other atoms via eeprom.add_*
     // --- Serialization ---
-    // Serialization to bytes
-    // let bytes = eeprom.serialize(); // (unused variable, removed)
-
-    // Serialization with CRC32
-    let bytes_with_crc = eeprom.serialize_with_crc();
-
     #[cfg(target_os = "linux")]
     {
+        // Serialization with CRC32
+        let bytes_with_crc = eeprom.serialize_with_crc();
         let dev_path = "/dev/i2c-0";
         let addr = 0x50;
         match ehatrom::write_to_eeprom_i2c(&bytes_with_crc, dev_path, addr) {
