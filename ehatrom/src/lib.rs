@@ -107,7 +107,7 @@ impl<const N: usize> fmt::Debug for CustomAtom<N> {
         // Безопасно копируем packed-поле data
         let self_ptr = self as *const Self as *const u8;
         let data_offset = core::mem::size_of::<u8>();
-        let data_ptr = unsafe { self_ptr.add(data_offset) } as *const u8;
+        let data_ptr = unsafe { self_ptr.add(data_offset) };
         let mut data = [0u8; N];
         unsafe {
             core::ptr::copy_nonoverlapping(data_ptr, data.as_mut_ptr(), N);
