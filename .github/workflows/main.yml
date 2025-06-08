@@ -10,4 +10,4 @@ on:
 
 jobs:
   rust:
-    uses: ./.github/workflows/rust.yml
+    uses: ./.github/workflows/ehatrom-rust.yml
