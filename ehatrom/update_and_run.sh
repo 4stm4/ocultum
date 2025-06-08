@@ -1,3 +1,4 @@
+# 4STM4 ocultum
 #!/bin/bash
 # update_and_run.sh — автоматизация git pull, сборки и запуска
 set -e

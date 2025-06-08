@@ -1,3 +1,7 @@
+/*
+  4STM4
+  ocultum
+*/
 use ehatrom::*;
 
 fn make_vendor() -> VendorInfoAtom {

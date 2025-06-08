@@ -1,9 +1,11 @@
+/*
+  4STM4
+  ocultum
+*/
 fn main() {
     #[cfg(target_os = "linux")]
     use ehatrom::{write_to_eeprom_i2c, read_from_eeprom_i2c};
     use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
-    use std::thread::sleep;
-    use std::time::Duration;
 
     // --- Build structure for writing ---
     let mut eeprom = Eeprom {
@@ -54,7 +56,7 @@ fn main() {
             }
         }
         // EEPROM may require a delay after writing
-        sleep(Duration::from_millis(10));
+        std::thread::sleep(std::time::Duration::from_millis(10));
         // --- Read and check ---
         let len = bytes_with_crc.len();
         let mut data = vec![0u8; len];

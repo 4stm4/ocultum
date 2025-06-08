@@ -1,3 +1,7 @@
+/*
+  4STM4
+  ocultum
+*/
 # ehatrom — библиотека для работы с HAT EEPROM Raspberry Pi
 
 `ehatrom` — это библиотека на Rust для чтения, записи и генерации содержимого EEPROM для Raspberry Pi HAT (Hardware Attached on Top) через I2C. Поддерживает корректную сериализацию/десериализацию структуры, работу с атомами (VendorInfo, GPIO Map, DTBlob, пользовательские), чтение/запись с 2-байтовым offset и page write, а также удобный вывод содержимого.
