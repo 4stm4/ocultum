@@ -1,4 +1,4 @@
-name: Rust CI
+name: Ehatrom Rust CI
 
 on:
   push:
@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ehatrom
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -34,10 +37,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
-          path: lcov.info
+          path: ehatrom/lcov.info
   release:
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ehatrom
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
@@ -52,4 +58,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-binaries
-          path: target/release/
+          path: ehatrom/target/release/
