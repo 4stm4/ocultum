@@ -31,8 +31,6 @@ fn main() {
         custom_atoms: Vec::new(),
     };
     eeprom.update_header();
-    eeprom.header.signature = *b"R-Pi";
-    eeprom.header.version = 1;
     // Добавление пользовательского атома (например, тип 0x80, данные "hello world")
     eeprom.add_custom_atom(0x80, b"hello world".to_vec());
     // You can add other atoms via eeprom.add_*

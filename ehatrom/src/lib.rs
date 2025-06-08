@@ -13,6 +13,18 @@ pub struct EepromHeader {
     pub eeplen: u32,         // Общая длина данных EEPROM (LE)
 }
 
+impl Default for EepromHeader {
+    fn default() -> Self {
+        EepromHeader {
+            signature: *b"R-Pi",
+            version: 1,
+            reserved: 0,
+            numatoms: 0,
+            eeplen: 0,
+        }
+    }
+}
+
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct AtomHeader {
