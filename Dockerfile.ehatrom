@@ -1,5 +1,5 @@
 # Dockerfile for local Rust CI (ehatrom)
-FROM rust:1.77 as builder
+FROM rustlang/rust:nightly as builder
 
 WORKDIR /workspace/ehatrom
 
