@@ -251,6 +251,74 @@ impl Eeprom {
         let crc = hasher.finalize();
         crc_bytes == crc.to_le_bytes()
     }
+
+    /// Сериализация структуры EEPROM в Vec<u8> (без CRC)
+    pub fn serialize(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        // Заголовок EEPROM
+        let header_ptr = &self.header as *const _ as *const u8;
+        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(header_ptr, core::mem::size_of::<EepromHeader>()) });
+        // VendorInfo
+        let atom_header = AtomHeader {
+            atom_type: AtomType::VendorInfo as u8,
+            count: 1,
+            dlen: core::mem::size_of::<VendorInfoAtom>() as u16,
+            reserved: 0,
+        };
+        let atom_ptr = &atom_header as *const _ as *const u8;
+        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+        let vendor_ptr = &self.vendor_info as *const _ as *const u8;
+        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(vendor_ptr, core::mem::size_of::<VendorInfoAtom>()) });
+        // GPIO bank0
+        let atom_header = AtomHeader {
+            atom_type: AtomType::GpioMapBank0 as u8,
+            count: 1,
+            dlen: core::mem::size_of::<GpioMapAtom>() as u16,
+            reserved: 0,
+        };
+        let atom_ptr = &atom_header as *const _ as *const u8;
+        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+        let gpio_ptr = &self.gpio_map_bank0 as *const _ as *const u8;
+        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>()) });
+        // DT blob
+        if let Some(ref blob) = self.dt_blob {
+            let atom_header = AtomHeader {
+                atom_type: AtomType::DtBlob as u8,
+                count: 1,
+                dlen: blob.len() as u16,
+                reserved: 0,
+            };
+            let atom_ptr = &atom_header as *const _ as *const u8;
+            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            bytes.extend_from_slice(blob);
+        }
+        // GPIO bank1
+        if let Some(ref bank1) = self.gpio_map_bank1 {
+            let atom_header = AtomHeader {
+                atom_type: AtomType::GpioMapBank1 as u8,
+                count: 1,
+                dlen: core::mem::size_of::<GpioMapAtom>() as u16,
+                reserved: 0,
+            };
+            let atom_ptr = &atom_header as *const _ as *const u8;
+            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            let gpio_ptr = bank1 as *const _ as *const u8;
+            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>()) });
+        }
+        // Пользовательские атомы
+        for (atom_type, data) in &self.custom_atoms {
+            let atom_header = AtomHeader {
+                atom_type: *atom_type,
+                count: 1,
+                dlen: data.len() as u16,
+                reserved: 0,
+            };
+            let atom_ptr = &atom_header as *const _ as *const u8;
+            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            bytes.extend_from_slice(data);
+        }
+        bytes
+    }
 }
 
 impl From<u8> for AtomType {
