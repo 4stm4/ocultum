@@ -8,7 +8,10 @@ fn make_vendor() -> VendorInfoAtom {
     VendorInfoAtom::new(0x1234, 0x5678, 1, "testvendor", "testproduct", [1; 16])
 }
 fn make_gpio() -> GpioMapAtom {
-    GpioMapAtom { flags: 0xAA55, pins: [1; 28] }
+    GpioMapAtom {
+        flags: 0xAA55,
+        pins: [1; 28],
+    }
 }
 
 #[test]
@@ -22,7 +25,7 @@ fn test_eeprom_validity() {
         custom_atoms: vec![],
     };
     assert!(eeprom.is_valid());
-    eeprom.header.signature = [0,0,0,0];
+    eeprom.header.signature = [0, 0, 0, 0];
     assert!(!eeprom.is_valid());
 }
 
@@ -54,7 +57,7 @@ fn test_add_atoms_and_update_header() {
     eeprom.add_gpio_map_bank1(make_gpio());
     assert!(eeprom.gpio_map_bank1.is_some());
     assert!(eeprom.header.numatoms > orig_atoms);
-    eeprom.add_dt_blob(vec![1,2,3,4]);
+    eeprom.add_dt_blob(vec![1, 2, 3, 4]);
     assert!(eeprom.dt_blob.is_some());
     let orig_atoms = eeprom.header.numatoms;
     eeprom.add_custom_atom(0x80, b"custom".to_vec());
@@ -68,14 +71,14 @@ fn test_serialize_and_deserialize() {
         header: Default::default(),
         vendor_info: make_vendor(),
         gpio_map_bank0: make_gpio(),
-        dt_blob: Some(vec![1,2,3]),
+        dt_blob: Some(vec![1, 2, 3]),
         gpio_map_bank1: Some(make_gpio()),
         custom_atoms: vec![(0x80, b"custom".to_vec())],
     };
     eeprom.update_header();
     let bytes = eeprom.serialize_with_crc();
     assert!(Eeprom::verify_crc(&bytes));
-    let without_crc = &bytes[..bytes.len()-4];
+    let without_crc = &bytes[..bytes.len() - 4];
     let parsed = Eeprom::from_bytes(without_crc).unwrap();
     let vendor_id = parsed.vendor_info.vendor_id;
     let flags = parsed.gpio_map_bank0.flags;
@@ -105,7 +108,7 @@ fn test_crc_check() {
 #[test]
 fn test_from_bytes_invalid() {
     // Недостаточно данных
-    assert!(Eeprom::from_bytes(&[1,2,3]).is_err());
+    assert!(Eeprom::from_bytes(&[1, 2, 3]).is_err());
     // Неверная сигнатура
     let mut eeprom = Eeprom {
         header: Default::default(),
@@ -115,7 +118,7 @@ fn test_from_bytes_invalid() {
         gpio_map_bank1: None,
         custom_atoms: vec![],
     };
-    eeprom.header.signature = [0,0,0,0];
+    eeprom.header.signature = [0, 0, 0, 0];
     let bytes = eeprom.serialize();
     assert!(Eeprom::from_bytes(&bytes).is_err());
 }

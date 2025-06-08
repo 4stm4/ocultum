@@ -2,7 +2,7 @@
   4STM4
   ocultum
 */
-use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
+use ehatrom::{Eeprom, GpioMapAtom, VendorInfoAtom};
 
 fn main() {
     // --- Build structure for writing ---
@@ -26,7 +26,10 @@ fn main() {
             },
             uuid: [0u8; 16],
         },
-        gpio_map_bank0: GpioMapAtom { flags: 0, pins: [0; 28] },
+        gpio_map_bank0: GpioMapAtom {
+            flags: 0,
+            pins: [0; 28],
+        },
         dt_blob: None,
         gpio_map_bank1: None,
         custom_atoms: Vec::new(),
@@ -61,13 +64,13 @@ fn main() {
                     print!("{:02X} ", b);
                 }
                 println!("");
-            },
+            }
             Err(e) => {
                 eprintln!("Error reading from I2C: {}", e);
                 return;
             }
         }
-        match Eeprom::from_bytes(&data[..data.len()-4]) {
+        match Eeprom::from_bytes(&data[..data.len() - 4]) {
             Ok(eeprom) => {
                 if eeprom.is_valid() {
                     println!("EEPROM header: {:?}", eeprom.header);

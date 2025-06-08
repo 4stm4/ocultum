@@ -11,11 +11,11 @@ use i2cdev::linux::LinuxI2CDevice;
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct EepromHeader {
-    pub signature: [u8; 4],  // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
-    pub version: u8,         // Format version (0x01 for first version)
-    pub reserved: u8,        // 0x00
-    pub numatoms: u16,       // Количество атомов (Little Endian)
-    pub eeplen: u32,         // Общая длина данных EEPROM (LE)
+    pub signature: [u8; 4], // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
+    pub version: u8,        // Format version (0x01 for first version)
+    pub reserved: u8,       // 0x00
+    pub numatoms: u16,      // Количество атомов (Little Endian)
+    pub eeplen: u32,        // Общая длина данных EEPROM (LE)
 }
 
 impl Default for EepromHeader {
@@ -33,10 +33,10 @@ impl Default for EepromHeader {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct AtomHeader {
-    pub atom_type: u8,    // Тип атома
-    pub count: u8,        // Количество структур в атоме (обычно 1)
-    pub dlen: u16,        // Длина данных атома (LE)
-    pub reserved: u32,    // Зарезервировано (0)
+    pub atom_type: u8, // Тип атома
+    pub count: u8,     // Количество структур в атоме (обычно 1)
+    pub dlen: u16,     // Длина данных атома (LE)
+    pub reserved: u32, // Зарезервировано (0)
 }
 
 #[repr(u8)]
@@ -52,12 +52,12 @@ pub enum AtomType {
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
 pub struct VendorInfoAtom {
-    pub vendor_id: u16,      // ID производителя
-    pub product_id: u16,     // ID продукта
-    pub product_ver: u16,    // Версия продукта
-    pub vendor: [u8; 16],    // Имя производителя (null-terminated)
-    pub product: [u8; 16],   // Имя продукта (null-terminated)
-    pub uuid: [u8; 16],      // UUID
+    pub vendor_id: u16,    // ID производителя
+    pub product_id: u16,   // ID продукта
+    pub product_ver: u16,  // Версия продукта
+    pub vendor: [u8; 16],  // Имя производителя (null-terminated)
+    pub product: [u8; 16], // Имя продукта (null-terminated)
+    pub uuid: [u8; 16],    // UUID
 }
 
 impl fmt::Debug for VendorInfoAtom {
@@ -84,15 +84,15 @@ impl fmt::Debug for VendorInfoAtom {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct GpioMapAtom {
-    pub flags: u16,          // Флаги GPIO
-    pub pins: [u8; 28],      // Карта пинов (28 пинов на банк)
+    pub flags: u16,     // Флаги GPIO
+    pub pins: [u8; 28], // Карта пинов (28 пинов на банк)
 }
 
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct DtBlobAtom {
-    pub dlen: u32,           // Длина blob
-    // Следом идут данные blob (dlen байт)
+    pub dlen: u32, // Длина blob
+                   // Следом идут данные blob (dlen байт)
 }
 
 #[repr(C, packed)]
@@ -112,7 +112,12 @@ impl<const N: usize> fmt::Debug for CustomAtom<N> {
         unsafe {
             core::ptr::copy_nonoverlapping(data_ptr, data.as_mut_ptr(), N);
         }
-        write!(f, "CustomAtom {{ atom_type: 0x{:02X}, data: {:?} }}", self.atom_type, &data[..])
+        write!(
+            f,
+            "CustomAtom {{ atom_type: 0x{:02X}, data: {:?} }}",
+            self.atom_type,
+            &data[..]
+        )
     }
 }
 
@@ -158,7 +163,8 @@ impl Eeprom {
             if data.len() < offset + size_of::<AtomHeader>() {
                 return Err("Недостаточно данных для AtomHeader");
             }
-            let atom_header = unsafe { read_unaligned(data[offset..].as_ptr() as *const AtomHeader) };
+            let atom_header =
+                unsafe { read_unaligned(data[offset..].as_ptr() as *const AtomHeader) };
             offset += size_of::<AtomHeader>();
             if data.len() < offset + atom_header.dlen as usize {
                 return Err("Недостаточно данных для атома");
@@ -166,12 +172,16 @@ impl Eeprom {
             match AtomType::from(atom_header.atom_type) {
                 AtomType::VendorInfo => {
                     if atom_header.dlen as usize >= size_of::<VendorInfoAtom>() {
-                        vendor_info = Some(unsafe { read_unaligned(data[offset..].as_ptr() as *const VendorInfoAtom) });
+                        vendor_info = Some(unsafe {
+                            read_unaligned(data[offset..].as_ptr() as *const VendorInfoAtom)
+                        });
                     }
                 }
                 AtomType::GpioMapBank0 => {
                     if atom_header.dlen as usize >= size_of::<GpioMapAtom>() {
-                        gpio_map_bank0 = Some(unsafe { read_unaligned(data[offset..].as_ptr() as *const GpioMapAtom) });
+                        gpio_map_bank0 = Some(unsafe {
+                            read_unaligned(data[offset..].as_ptr() as *const GpioMapAtom)
+                        });
                     }
                 }
                 AtomType::DtBlob => {
@@ -182,14 +192,17 @@ impl Eeprom {
                 }
                 AtomType::GpioMapBank1 => {
                     if atom_header.dlen as usize >= size_of::<GpioMapAtom>() {
-                        gpio_map_bank1 = Some(unsafe { read_unaligned(data[offset..].as_ptr() as *const GpioMapAtom) });
+                        gpio_map_bank1 = Some(unsafe {
+                            read_unaligned(data[offset..].as_ptr() as *const GpioMapAtom)
+                        });
                     }
                 }
                 AtomType::Unknown => {
                     // Сохраняем пользовательский атом (тип и данные)
                     let dlen = atom_header.dlen as usize;
                     if dlen > 0 && data.len() >= offset + dlen {
-                        custom_atoms.push((atom_header.atom_type, data[offset..offset + dlen].to_vec()));
+                        custom_atoms
+                            .push((atom_header.atom_type, data[offset..offset + dlen].to_vec()));
                     }
                 }
             }
@@ -266,7 +279,9 @@ impl Eeprom {
     }
     /// Проверка CRC32 (ожидается, что последние 4 байта — CRC32 LE)
     pub fn verify_crc(data: &[u8]) -> bool {
-        if data.len() < 4 { return false; }
+        if data.len() < 4 {
+            return false;
+        }
         let (content, crc_bytes) = data.split_at(data.len() - 4);
         let mut hasher = Hasher::new();
         hasher.update(content);
@@ -279,7 +294,9 @@ impl Eeprom {
         let mut bytes = Vec::new();
         // Заголовок EEPROM
         let header_ptr = &self.header as *const _ as *const u8;
-        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(header_ptr, core::mem::size_of::<EepromHeader>()) });
+        bytes.extend_from_slice(unsafe {
+            std::slice::from_raw_parts(header_ptr, core::mem::size_of::<EepromHeader>())
+        });
         // VendorInfo
         let atom_header = AtomHeader {
             atom_type: AtomType::VendorInfo as u8,
@@ -288,9 +305,13 @@ impl Eeprom {
             reserved: 0,
         };
         let atom_ptr = &atom_header as *const _ as *const u8;
-        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+        bytes.extend_from_slice(unsafe {
+            std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>())
+        });
         let vendor_ptr = &self.vendor_info as *const _ as *const u8;
-        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(vendor_ptr, core::mem::size_of::<VendorInfoAtom>()) });
+        bytes.extend_from_slice(unsafe {
+            std::slice::from_raw_parts(vendor_ptr, core::mem::size_of::<VendorInfoAtom>())
+        });
         // GPIO bank0
         let atom_header = AtomHeader {
             atom_type: AtomType::GpioMapBank0 as u8,
@@ -299,9 +320,13 @@ impl Eeprom {
             reserved: 0,
         };
         let atom_ptr = &atom_header as *const _ as *const u8;
-        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+        bytes.extend_from_slice(unsafe {
+            std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>())
+        });
         let gpio_ptr = &self.gpio_map_bank0 as *const _ as *const u8;
-        bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>()) });
+        bytes.extend_from_slice(unsafe {
+            std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>())
+        });
         // DT blob
         if let Some(ref blob) = self.dt_blob {
             let atom_header = AtomHeader {
@@ -311,7 +336,9 @@ impl Eeprom {
                 reserved: 0,
             };
             let atom_ptr = &atom_header as *const _ as *const u8;
-            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            bytes.extend_from_slice(unsafe {
+                std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>())
+            });
             bytes.extend_from_slice(blob);
         }
         // GPIO bank1
@@ -323,9 +350,13 @@ impl Eeprom {
                 reserved: 0,
             };
             let atom_ptr = &atom_header as *const _ as *const u8;
-            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            bytes.extend_from_slice(unsafe {
+                std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>())
+            });
             let gpio_ptr = bank1 as *const _ as *const u8;
-            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>()) });
+            bytes.extend_from_slice(unsafe {
+                std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>())
+            });
         }
         // Пользовательские атомы
         for (atom_type, data) in &self.custom_atoms {
@@ -336,7 +367,9 @@ impl Eeprom {
                 reserved: 0,
             };
             let atom_ptr = &atom_header as *const _ as *const u8;
-            bytes.extend_from_slice(unsafe { std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>()) });
+            bytes.extend_from_slice(unsafe {
+                std::slice::from_raw_parts(atom_ptr, core::mem::size_of::<AtomHeader>())
+            });
             bytes.extend_from_slice(data);
         }
         bytes
@@ -399,7 +432,14 @@ pub fn read_from_eeprom_i2c(
 
 impl VendorInfoAtom {
     /// Создаёт VendorInfoAtom из строк (автоматически обрезает/дополняет нулями)
-    pub fn new(vendor_id: u16, product_id: u16, product_ver: u16, vendor: &str, product: &str, uuid: [u8; 16]) -> Self {
+    pub fn new(
+        vendor_id: u16,
+        product_id: u16,
+        product_ver: u16,
+        vendor: &str,
+        product: &str,
+        uuid: [u8; 16],
+    ) -> Self {
         let mut vendor_arr = [0u8; 16];
         let mut product_arr = [0u8; 16];
         let vendor_bytes = vendor.as_bytes();
