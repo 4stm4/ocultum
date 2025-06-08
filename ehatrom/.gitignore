@@ -22,3 +22,16 @@
 
 # Кэш
 CACHEDIR.TAG
+
+# Файлы покрытия и профили
+**/*.profraw
+**/*.gcda
+**/*.gcno
+**/*.gcov
+*.old
+*.orig
+*.rej
+*.lock
+lcov.info
+coverage/
+artifacts/

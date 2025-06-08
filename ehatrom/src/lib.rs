@@ -1,7 +1,34 @@
-/*
-  4STM4
-  ocultum
-*/
+//! 4STM4
+//! ocultum
+//!
+//! # ehatrom — EEPROM HAT library for Raspberry Pi HATs
+//!
+//! EEPROM (de)serialization, I2C read/write (Linux), CRC32, custom atoms, CLI example.
+//!
+//! - [Documentation (docs.rs)](https://docs.rs/ehatrom)
+//! - [GitHub](https://github.com/youruser/ehatrom)
+//!
+//! ## Example
+//!
+//! ```rust
+//! use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
+//!
+//! let vendor_info = VendorInfoAtom::new(
+//!     0x1234, 0x5678, 1, "MyVendor", "MyHAT", [0u8; 16]
+//! );
+//! let gpio = GpioMapAtom { flags: 0, pins: [0; 28] };
+//! let mut eeprom = Eeprom {
+//!     header: Default::default(),
+//!     vendor_info,
+//!     gpio_map_bank0: gpio,
+//!     dt_blob: None,
+//!     gpio_map_bank1: None,
+//!     custom_atoms: vec![],
+//! };
+//! eeprom.update_header();
+//! ```
+//!
+
 use core::fmt;
 use crc32fast::Hasher;
 use i2cdev::core::I2CDevice;

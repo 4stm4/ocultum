@@ -1,7 +1,8 @@
-/*
-  4STM4
-  ocultum
-*/
+[![Build Status](https://github.com/youruser/ehatrom/actions/workflows/ehatrom-rust.yml/badge.svg)](https://github.com/youruser/ehatrom/actions)
+[![Crates.io](https://img.shields.io/crates/v/ehatrom.svg)](https://crates.io/crates/ehatrom)
+[![Docs.rs](https://docs.rs/ehatrom/badge.svg)](https://docs.rs/ehatrom)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 # ehatrom — library for working with Raspberry Pi HAT EEPROM
 
 `ehatrom` is a Rust library for reading, writing, and generating EEPROM content for Raspberry Pi HAT (Hardware Attached on Top) via I2C. It supports correct serialization/deserialization of the structure, working with atoms (VendorInfo, GPIO Map, DTBlob, custom), reading/writing with 2-byte offset and page write, and convenient content output.
