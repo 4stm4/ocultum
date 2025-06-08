@@ -1,6 +1,7 @@
 fn main() {
-    // Example: reading EEPROM from a file or byte array
-    use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, write_to_eeprom_i2c, read_from_eeprom_i2c};
+    #[cfg(target_os = "linux")]
+    use ehatrom::{write_to_eeprom_i2c, read_from_eeprom_i2c};
+    use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
     use std::thread::sleep;
     use std::time::Duration;
 
@@ -41,61 +42,66 @@ fn main() {
     // Serialization with CRC32
     let bytes_with_crc = eeprom.serialize_with_crc();
 
-    // --- Write to EEPROM ---
-    let dev_path = "/dev/i2c-0";
-    let addr = 0x50;
-    match write_to_eeprom_i2c(&bytes_with_crc, dev_path, addr) {
-        Ok(_) => println!("Data successfully written to EEPROM!"),
-        Err(e) => {
-            eprintln!("Error writing to EEPROM: {}", e);
-            return;
-        }
-    }
-    // EEPROM may require a delay after writing
-    sleep(Duration::from_millis(10));
-    // --- Read and check ---
-    let len = bytes_with_crc.len();
-    let mut data = vec![0u8; len];
-    match read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
-        Ok(_) => {
-            // For debugging: print first 16 bytes in hex
-            print!("EEPROM HEX: ");
-            for b in data.iter().take(16) {
-                print!("{:02X} ", b);
+    #[cfg(target_os = "linux")]
+    {
+        let dev_path = "/dev/i2c-0";
+        let addr = 0x50;
+        match ehatrom::write_to_eeprom_i2c(&bytes_with_crc, dev_path, addr) {
+            Ok(_) => println!("Data successfully written to EEPROM!"),
+            Err(e) => {
+                eprintln!("Error writing to EEPROM: {}", e);
+                return;
             }
-            println!("");
-        },
-        Err(e) => {
-            eprintln!("Error reading from I2C: {}", e);
-            return;
         }
-    }
-    match Eeprom::from_bytes(&data[..data.len()-4]) {
-        Ok(eeprom) => {
-            if eeprom.is_valid() {
-                println!("EEPROM header: {:?}", eeprom.header);
-                println!("Vendor info: {:?}", eeprom.vendor_info);
-                println!("GPIO map bank0: {:?}", eeprom.gpio_map_bank0);
-                if !eeprom.custom_atoms.is_empty() {
-                    println!("Custom atoms:");
-                    for (atom_type, data) in &eeprom.custom_atoms {
-                        print!("  Type 0x{:02X}: ", atom_type);
-                        for b in data {
-                            print!("{:02X} ", b);
-                        }
-                        // Также можно вывести строкой, если данные текстовые:
-                        if let Ok(s) = std::str::from_utf8(data) {
-                            print!(" (as string: \"{}\")", s);
-                        }
-                        println!();
-                    }
+        // EEPROM may require a delay after writing
+        sleep(Duration::from_millis(10));
+        // --- Read and check ---
+        let len = bytes_with_crc.len();
+        let mut data = vec![0u8; len];
+        match ehatrom::read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
+            Ok(_) => {
+                // For debugging: print first 16 bytes in hex
+                print!("EEPROM HEX: ");
+                for b in data.iter().take(16) {
+                    print!("{:02X} ", b);
                 }
-            } else {
-                println!("EEPROM is empty or uninitialized (invalid signature/version)");
+                println!("");
+            },
+            Err(e) => {
+                eprintln!("Error reading from I2C: {}", e);
+                return;
             }
         }
-        Err(e) => {
-            eprintln!("EEPROM parsing error: {}", e);
+        match Eeprom::from_bytes(&data[..data.len()-4]) {
+            Ok(eeprom) => {
+                if eeprom.is_valid() {
+                    println!("EEPROM header: {:?}", eeprom.header);
+                    println!("Vendor info: {:?}", eeprom.vendor_info);
+                    println!("GPIO map bank0: {:?}", eeprom.gpio_map_bank0);
+                    if !eeprom.custom_atoms.is_empty() {
+                        println!("Custom atoms:");
+                        for (atom_type, data) in &eeprom.custom_atoms {
+                            print!("  Type 0x{:02X}: ", atom_type);
+                            for b in data {
+                                print!("{:02X} ", b);
+                            }
+                            if let Ok(s) = std::str::from_utf8(data) {
+                                print!(" (as string: \"{}\")", s);
+                            }
+                            println!();
+                        }
+                    }
+                } else {
+                    println!("EEPROM is empty or uninitialized (invalid signature/version)");
+                }
+            }
+            Err(e) => {
+                eprintln!("EEPROM parsing error: {}", e);
+            }
         }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        println!("I2C EEPROM read/write is only available on Linux.");
     }
 }

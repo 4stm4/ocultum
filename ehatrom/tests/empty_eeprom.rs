@@ -22,6 +22,7 @@ fn test_empty_eeprom_is_invalid() {
         gpio_map_bank0: GpioMapAtom { flags: 0, pins: [0; 28] },
         dt_blob: None,
         gpio_map_bank1: None,
+        custom_atoms: vec![],
     };
     assert!(!eeprom.is_valid());
 }
