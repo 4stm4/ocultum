@@ -3,14 +3,21 @@ name = "ehatrom"
 version = "0.1.0"
 edition = "2024"
 description = "EEPROM HAT library for Raspberry Pi HATs (serialization, I2C, CRC32, custom atoms)"
-repository = "https://github.com/youruser/ehatrom"
-homepage = "https://github.com/youruser/ehatrom"
+repository = "https://github.com/4stm4/ocultum"
+homepage = "https://github.com/4stm4/ocultum"
 documentation = "https://docs.rs/ehatrom"
 keywords = ["raspberry-pi", "eeprom", "hat", "i2c", "crc32"]
 categories = ["embedded", "hardware-support"]
 readme = "README.md"
 license = "MIT"
-authors = ["Your Name <you@example.com>"]
+authors = ["Alekei Zakharchenko <ehatrom@4stm4.ru>"]
+exclude = [
+  "tests/*",
+  "Dockerfile*",
+  "update_and_run.sh",
+  "update_and_run.md",
+  ".github/*"
+]
 
 [dependencies]
 crc32fast = "1.4.2"

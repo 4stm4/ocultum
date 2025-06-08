@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/youruser/ehatrom/actions/workflows/ehatrom-rust.yml/badge.svg)](https://github.com/youruser/ehatrom/actions)
+[![Ehatrom CI](https://github.com/4stm4/ocultum/actions/workflows/ehatrom-rust.yml/badge.svg?branch=main)](https://github.com/4stm4/ocultum/actions/workflows/ehatrom-rust.yml)
 [![Crates.io](https://img.shields.io/crates/v/ehatrom.svg)](https://crates.io/crates/ehatrom)
 [![Docs.rs](https://docs.rs/ehatrom/badge.svg)](https://docs.rs/ehatrom)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

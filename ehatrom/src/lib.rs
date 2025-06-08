@@ -60,10 +60,10 @@ impl Default for EepromHeader {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct AtomHeader {
-    pub atom_type: u8, // Тип атома
-    pub count: u8,     // Количество структур в атоме (обычно 1)
-    pub dlen: u16,     // Длина данных атома (LE)
-    pub reserved: u32, // Зарезервировано (0)
+    pub atom_type: u8, // Atom type
+    pub count: u8,     // Number of structures in atom (usually 1)
+    pub dlen: u16,     // Data length (LE)
+    pub reserved: u32, // Reserved (0)
 }
 
 #[repr(u8)]
@@ -79,11 +79,11 @@ pub enum AtomType {
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
 pub struct VendorInfoAtom {
-    pub vendor_id: u16,    // ID производителя
-    pub product_id: u16,   // ID продукта
-    pub product_ver: u16,  // Версия продукта
-    pub vendor: [u8; 16],  // Имя производителя (null-terminated)
-    pub product: [u8; 16], // Имя продукта (null-terminated)
+    pub vendor_id: u16,    // Vendor ID
+    pub product_id: u16,   // Product ID
+    pub product_ver: u16,  // Product version
+    pub vendor: [u8; 16],  // Vendor name (null-terminated)
+    pub product: [u8; 16], // Product name (null-terminated)
     pub uuid: [u8; 16],    // UUID
 }
 
@@ -158,25 +158,25 @@ pub struct Eeprom {
     pub header: EepromHeader,
     pub vendor_info: VendorInfoAtom,
     pub gpio_map_bank0: GpioMapAtom,
-    pub dt_blob: Option<Vec<u8>>, // DT blob может быть переменной длины
-    pub gpio_map_bank1: Option<GpioMapAtom>, // Опционально
+    pub dt_blob: Option<Vec<u8>>, // DT blob can be variable length
+    pub gpio_map_bank1: Option<GpioMapAtom>, // Optional
     pub custom_atoms: Vec<(u8, Vec<u8>)>, // (atom_type, data)
 }
 
 // Можно добавить функции для парсинга и работы с этими структурами
 impl Eeprom {
-    /// Чтение структуры EEPROM из среза байт
+    /// Reads EEPROM structure from a byte slice
     pub fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
         use core::mem::size_of;
         use core::ptr::read_unaligned;
 
         if data.len() < size_of::<EepromHeader>() {
-            return Err("Недостаточно данных для заголовка EEPROM");
+            return Err("Not enough data for EEPROM header");
         }
-        // Читаем заголовок
+        // Read header
         let header = unsafe { read_unaligned(data.as_ptr() as *const EepromHeader) };
         if &header.signature != b"R-Pi" {
-            return Err("Неверная сигнатура EEPROM");
+            return Err("Invalid EEPROM signature");
         }
         let mut offset = size_of::<EepromHeader>();
         let mut vendor_info = None;
@@ -186,13 +186,13 @@ impl Eeprom {
         let mut custom_atoms = Vec::new();
         for _ in 0..header.numatoms {
             if data.len() < offset + size_of::<AtomHeader>() {
-                return Err("Недостаточно данных для AtomHeader");
+                return Err("Not enough data for AtomHeader");
             }
             let atom_header =
                 unsafe { read_unaligned(data[offset..].as_ptr() as *const AtomHeader) };
             offset += size_of::<AtomHeader>();
             if data.len() < offset + atom_header.dlen as usize {
-                return Err("Недостаточно данных для атома");
+                return Err("Not enough data for atom");
             }
             match AtomType::from(atom_header.atom_type) {
                 AtomType::VendorInfo => {
@@ -223,7 +223,7 @@ impl Eeprom {
                     }
                 }
                 AtomType::Unknown => {
-                    // Сохраняем пользовательский атом (тип и данные)
+                    // Save custom atom (type and data)
                     let dlen = atom_header.dlen as usize;
                     if dlen > 0 && data.len() >= offset + dlen {
                         custom_atoms
@@ -235,15 +235,15 @@ impl Eeprom {
         }
         Ok(Eeprom {
             header,
-            vendor_info: vendor_info.ok_or("VendorInfo атом не найден")?,
-            gpio_map_bank0: gpio_map_bank0.ok_or("GpioMapBank0 атом не найден")?,
+            vendor_info: vendor_info.ok_or("VendorInfo atom not found")?,
+            gpio_map_bank0: gpio_map_bank0.ok_or("GpioMapBank0 atom not found")?,
             dt_blob,
             gpio_map_bank1,
             custom_atoms,
         })
     }
 
-    /// Проверяет, содержит ли EEPROM валидные данные (по сигнатуре и версии)
+    /// Checks if EEPROM contains valid data (by signature and version)
     pub fn is_valid(&self) -> bool {
         self.header.signature == *b"R-Pi" && self.header.version != 0
     }
@@ -268,9 +268,9 @@ impl Eeprom {
         self.custom_atoms.push((atom_type, data));
         self.update_header();
     }
-    /// Пересчитать numatoms и eeplen после добавления атомов
+    /// Recalculate numatoms and eeplen after adding atoms
     pub fn update_header(&mut self) {
-        let mut numatoms = 2; // VendorInfo и GPIO bank0 всегда есть
+        let mut numatoms = 2; // VendorInfo and GPIO bank0 are always present
         let mut eeplen = core::mem::size_of::<EepromHeader>()
             + core::mem::size_of::<AtomHeader>() * 2
             + core::mem::size_of::<VendorInfoAtom>()
@@ -293,7 +293,7 @@ impl Eeprom {
         self.header.eeplen = eeplen as u32;
     }
 
-    /// Сериализация с добавлением CRC32 в конец (4 байта LE)
+    /// Serialize with CRC32 appended (4 bytes LE)
     pub fn serialize_with_crc(&self) -> Vec<u8> {
         let mut data = self.serialize();
         let mut hasher = Hasher::new();
@@ -302,7 +302,7 @@ impl Eeprom {
         data.extend_from_slice(&crc.to_le_bytes());
         data
     }
-    /// Проверка CRC32 (ожидается, что последние 4 байта — CRC32 LE)
+    /// CRC32 check (expects last 4 bytes to be CRC32 LE)
     pub fn verify_crc(data: &[u8]) -> bool {
         if data.len() < 4 {
             return false;
@@ -314,10 +314,10 @@ impl Eeprom {
         crc_bytes == crc.to_le_bytes()
     }
 
-    /// Сериализация структуры EEPROM в Vec<u8> (без CRC)
+    /// Serialize EEPROM structure to Vec<u8> (without CRC)
     pub fn serialize(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        // Заголовок EEPROM
+        // EEPROM header
         let header_ptr = &self.header as *const _ as *const u8;
         bytes.extend_from_slice(unsafe {
             std::slice::from_raw_parts(header_ptr, core::mem::size_of::<EepromHeader>())
@@ -383,7 +383,7 @@ impl Eeprom {
                 std::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>())
             });
         }
-        // Пользовательские атомы
+        // Custom atoms
         for (atom_type, data) in &self.custom_atoms {
             let atom_header = AtomHeader {
                 atom_type: *atom_type,
@@ -456,7 +456,7 @@ pub fn read_from_eeprom_i2c(
 }
 
 impl VendorInfoAtom {
-    /// Создаёт VendorInfoAtom из строк (автоматически обрезает/дополняет нулями)
+    /// Creates VendorInfoAtom from strings (automatically trims/pads with zeros)
     pub fn new(
         vendor_id: u16,
         product_id: u16,
@@ -469,11 +469,11 @@ impl VendorInfoAtom {
         let mut product_arr = [0u8; 16];
         let vendor_bytes = vendor.as_bytes();
         let product_bytes = product.as_bytes();
-        let vendor_len = vendor_bytes.len().min(15); // оставляем место под null-terminator
+        let vendor_len = vendor_bytes.len().min(15); // leave space for null-terminator
         let product_len = product_bytes.len().min(15);
         vendor_arr[..vendor_len].copy_from_slice(&vendor_bytes[..vendor_len]);
         product_arr[..product_len].copy_from_slice(&product_bytes[..product_len]);
-        // null-terminator уже есть, т.к. массивы заполнены нулями
+        // null-terminator is already present, as arrays are zero-filled
         VendorInfoAtom {
             vendor_id,
             product_id,
