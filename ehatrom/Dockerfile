@@ -1,5 +1,5 @@
 # Этап сборки CI
-FROM rust:nightly-slim-bookworm AS builder
+FROM rust:1.87 AS builder
 
 # Устанавливаем рабочую директорию
 WORKDIR /workspace/ehatrom
@@ -29,8 +29,8 @@ RUN cargo build --workspace --all-targets --verbose
 # Запуск тестов
 RUN cargo test --workspace --all-targets --verbose
 
-# Этап сборки релизных артефактов (аналог release job)
-FROM rust:nightly-slim-bookworm AS release
+# Этап сборки релизных артефактов
+FROM rust:nightly AS release
 
 WORKDIR /workspace/ehatrom
 

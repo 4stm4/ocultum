@@ -37,9 +37,9 @@
 
 use core::fmt;
 use crc32fast::Hasher;
-#[cfg(target_os = "linux")]
+#[cfg(feature = "linux")]
 use i2cdev::core::I2CDevice;
-#[cfg(target_os = "linux")]
+#[cfg(feature = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
 use serde::{Deserialize, Serialize};
 
@@ -426,7 +426,7 @@ impl From<u8> for AtomType {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(feature = "linux")]
 pub fn write_to_eeprom_i2c(
     data: &[u8],
     dev_path: &str,
@@ -449,7 +449,7 @@ pub fn write_to_eeprom_i2c(
     Ok(())
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(feature = "linux")]
 pub fn read_from_eeprom_i2c(
     buf: &mut [u8],
     dev_path: &str,
