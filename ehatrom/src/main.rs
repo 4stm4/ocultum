@@ -28,7 +28,7 @@ fn main() {
                 eprintln!("Usage: ehatrom read <i2c-dev> <address> <output.bin>");
                 process::exit(1);
             }
-            #[cfg(target_os = "linux")]
+            #[cfg(all(target_os = "linux", feature = "linux"))]
             {
                 let dev = &args[2];
                 let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
@@ -52,9 +52,9 @@ fn main() {
                     }
                 }
             }
-            #[cfg(not(target_os = "linux"))]
+            #[cfg(not(all(target_os = "linux", feature = "linux")))]
             {
-                eprintln!("I2C read is only supported on Linux");
+                eprintln!("I2C read is only supported on Linux with --features=linux");
                 process::exit(1);
             }
         }
@@ -64,7 +64,7 @@ fn main() {
                 eprintln!("Usage: ehatrom write <i2c-dev> <address> <input.bin>");
                 process::exit(1);
             }
-            #[cfg(target_os = "linux")]
+            #[cfg(all(target_os = "linux", feature = "linux"))]
             {
                 let dev = &args[2];
                 let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
@@ -89,9 +89,9 @@ fn main() {
                     }
                 }
             }
-            #[cfg(not(target_os = "linux"))]
+            #[cfg(not(all(target_os = "linux", feature = "linux")))]
             {
-                eprintln!("I2C write is only supported on Linux");
+                eprintln!("I2C write is only supported on Linux with --features=linux");
                 process::exit(1);
             }
         }
