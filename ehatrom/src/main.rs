@@ -9,7 +9,10 @@
 // \___/ \___|\__,_|_|\__|\__,_|_| |_| |_|
 
 fn main() {
-    use ehatrom::{Eeprom, read_from_eeprom_i2c, write_to_eeprom_i2c};
+    // Импортируем I2C-функции только на Linux
+    use ehatrom::Eeprom;
+    #[cfg(target_os = "linux")]
+    use ehatrom::{read_from_eeprom_i2c, write_to_eeprom_i2c};
     use std::env;
     use std::process;
 
@@ -25,24 +28,27 @@ fn main() {
                 eprintln!("Usage: ehatrom read <i2c-dev> <address> <output.bin>");
                 process::exit(1);
             }
-            let dev = &args[2];
-            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                eprintln!("Invalid address: {}", args[3]);
-                process::exit(1);
-            });
-            let mut buf = vec![0u8; 256];
             #[cfg(target_os = "linux")]
-            match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
-                Ok(()) => {
-                    if let Err(e) = std::fs::write(&args[4], &buf) {
-                        eprintln!("Failed to write output: {e}");
+            {
+                let dev = &args[2];
+                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
+                    eprintln!("Invalid address: {}", args[3]);
+                    process::exit(1);
+                });
+                let buf = vec![0u8; 256];
+                let mut buf = buf; // для совместимости с сигнатурой
+                match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
+                    Ok(()) => {
+                        if let Err(e) = std::fs::write(&args[4], &buf) {
+                            eprintln!("Failed to write output: {e}");
+                            process::exit(1);
+                        }
+                        println!("EEPROM read and saved to {}", args[4]);
+                    }
+                    Err(e) => {
+                        eprintln!("Read error: {e}");
                         process::exit(1);
                     }
-                    println!("EEPROM read and saved to {}", args[4]);
-                }
-                Err(e) => {
-                    eprintln!("Read error: {e}");
-                    process::exit(1);
                 }
             }
             #[cfg(not(target_os = "linux"))]
@@ -57,26 +63,28 @@ fn main() {
                 eprintln!("Usage: ehatrom write <i2c-dev> <address> <input.bin>");
                 process::exit(1);
             }
-            let dev = &args[2];
-            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                eprintln!("Invalid address: {}", args[3]);
-                process::exit(1);
-            });
-            let data = match std::fs::read(&args[4]) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("Failed to read input: {e}");
-                    process::exit(1);
-                }
-            };
             #[cfg(target_os = "linux")]
-            match write_to_eeprom_i2c(&data, dev, addr) {
-                Ok(()) => {
-                    println!("EEPROM written from {}", args[4]);
-                }
-                Err(e) => {
-                    eprintln!("Write error: {e}");
+            {
+                let dev = &args[2];
+                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
+                    eprintln!("Invalid address: {}", args[3]);
                     process::exit(1);
+                });
+                let data = match std::fs::read(&args[4]) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        eprintln!("Failed to read input: {e}");
+                        process::exit(1);
+                    }
+                };
+                match write_to_eeprom_i2c(&data, dev, addr) {
+                    Ok(()) => {
+                        println!("EEPROM written from {}", args[4]);
+                    }
+                    Err(e) => {
+                        eprintln!("Write error: {e}");
+                        process::exit(1);
+                    }
                 }
             }
             #[cfg(not(target_os = "linux"))]

@@ -37,7 +37,6 @@
 
 use core::fmt;
 use crc32fast::Hasher;
-use i2cdev::core::I2CDevice;
 #[cfg(target_os = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
 
@@ -461,9 +460,6 @@ pub fn read_from_eeprom_i2c(
     dev.read(buf)?;
     Ok(())
 }
-
-#[cfg(target_os = "linux")]
-pub use self::{read_from_eeprom_i2c, write_to_eeprom_i2c};
 
 impl VendorInfoAtom {
     /// Creates VendorInfoAtom from strings (automatically trims/pads with zeros)
