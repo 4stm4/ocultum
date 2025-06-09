@@ -110,7 +110,7 @@ fn main() {
             };
             match Eeprom::from_bytes(&data) {
                 Ok(eeprom) => {
-                    println!("EEPROM info:\n{:#?}", eeprom);
+                    println!("EEPROM info:\n{eeprom:#?}");
                 }
                 Err(e) => {
                     eprintln!("Parse error: {e}");
