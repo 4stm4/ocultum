@@ -123,6 +123,35 @@ Each byte of the `pins` array defines the function of the corresponding GPIO:
 
 See also: [update_and_run.md](./update_and_run.md) for usage automation.
 
+## Command-line interface (CLI)
+
+A full-featured CLI is available starting from version 0.2.0:
+
+```
+Usage: ehatrom <read|write|info> [options]
+
+Commands:
+  read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file
+  write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device
+  info <input.bin>                        Show parsed EEPROM info from file
+```
+
+Examples:
+
+```sh
+# Read EEPROM to file
+sudo ehatrom read /dev/i2c-0 0x50 dump.bin
+
+# Write EEPROM from file
+sudo ehatrom write /dev/i2c-0 0x50 dump.bin
+
+# Show EEPROM info
+./ehatrom info dump.bin
+```
+
+- All errors and usage info are printed to stderr.
+- Requires root for I2C access on Linux.
+
 ## Links
 - [Official HAT EEPROM specification](https://github.com/raspberrypi/hats/blob/master/eeprom-format.md)
 

@@ -8,103 +8,103 @@
 //| (_) | (__| |_| | | |_| |_| | | | | | |
 // \___/ \___|\__,_|_|\__|\__,_|_| |_| |_|
 
-use ehatrom::{Eeprom, GpioMapAtom, VendorInfoAtom};
-
 fn main() {
-    // --- Build structure for writing ---
-    let mut eeprom = Eeprom {
-        header: Default::default(),
-        vendor_info: VendorInfoAtom {
-            vendor_id: 0x1234,
-            product_id: 0x5678,
-            product_ver: 1, // product version in development — usually 1
-            vendor: {
-                let mut arr = [0u8; 16];
-                let s = b"4stm4";
-                arr[..s.len()].copy_from_slice(s);
-                arr
-            },
-            product: {
-                let mut arr = [0u8; 16];
-                let s = b"ocultum";
-                arr[..s.len()].copy_from_slice(s);
-                arr
-            },
-            uuid: [0u8; 16],
-        },
-        gpio_map_bank0: GpioMapAtom {
-            flags: 0,
-            pins: [0; 28],
-        },
-        dt_blob: None,
-        gpio_map_bank1: None,
-        custom_atoms: Vec::new(),
-    };
-    eeprom.update_header();
-    // Добавление пользовательского атома (например, тип 0x80, данные "hello world")
-    eeprom.add_custom_atom(0x80, b"hello world".to_vec());
-    // --- Serialization ---
-    #[cfg(target_os = "linux")]
-    {
-        // Serialization with CRC32
-        let bytes_with_crc = eeprom.serialize_with_crc();
-        let dev_path = "/dev/i2c-0";
-        let addr = 0x50;
-        match ehatrom::write_to_eeprom_i2c(&bytes_with_crc, dev_path, addr) {
-            Ok(_) => println!("Data successfully written to EEPROM!"),
-            Err(e) => {
-                eprintln!("Error writing to EEPROM: {e}");
-                return;
-            }
-        }
-        // EEPROM may require a delay after writing
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        // --- Read and check ---
-        let len = bytes_with_crc.len();
-        let mut data = vec![0u8; len];
-        match ehatrom::read_from_eeprom_i2c(&mut data, dev_path, addr, 0x0000) {
-            Ok(_) => {
-                // For debugging: print first 16 bytes in hex
-                print!("EEPROM HEX: ");
-                for b in data.iter().take(16) {
-                    print!("{b:02X} ");
-                }
-            }
-            Err(e) => {
-                eprintln!("Error reading from I2C: {e}");
-                return;
-            }
-        }
-        match Eeprom::from_bytes(&data[..data.len() - 4]) {
-            Ok(eeprom) => {
-                if eeprom.is_valid() {
-                    println!("EEPROM header: {:?}", eeprom.header);
-                    println!("Vendor info: {:?}", eeprom.vendor_info);
-                    println!("GPIO map bank0: {:?}", eeprom.gpio_map_bank0);
-                    if !eeprom.custom_atoms.is_empty() {
-                        println!("Custom atoms:");
-                        for (atom_type, data) in &eeprom.custom_atoms {
-                            print!("  Type 0x{atom_type:02X}: ");
-                            for b in data {
-                                print!("{b:02X} ");
-                            }
-                            if let Ok(s) = std::str::from_utf8(data) {
-                                print!(" (as string: \"{s}\")");
-                            }
-                            println!();
-                        }
-                    }
-                } else {
-                    println!("EEPROM is empty or uninitialized (invalid signature/version)");
-                }
-            }
-            Err(e) => {
-                eprintln!("EEPROM parsing error: {e}");
-            }
-        }
+    use ehatrom::Eeprom;
+    use std::env;
+    use std::process;
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: ehatrom <read|write|info> [options]");
+        process::exit(1);
     }
-    #[cfg(not(target_os = "linux"))]
-    {
-        println!("I2C EEPROM read/write is only available on Linux.");
+    match args[1].as_str() {
+        "read" => {
+            // ehatrom read <i2c-dev> <address> <output.bin>
+            if args.len() != 5 {
+                eprintln!("Usage: ehatrom read <i2c-dev> <address> <output.bin>");
+                process::exit(1);
+            }
+            let dev = &args[2];
+            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16)
+                .unwrap_or_else(|_| {
+                    eprintln!("Invalid address: {}", args[3]);
+                    process::exit(1);
+                });
+            match Eeprom::read_from_i2c(dev, addr) {
+                Ok(eeprom) => {
+                    if let Err(e) = std::fs::write(&args[4], eeprom.to_bytes()) {
+                        eprintln!("Failed to write output: {e}");
+                        process::exit(1);
+                    }
+                    println!("EEPROM read and saved to {}", args[4]);
+                }
+                Err(e) => {
+                    eprintln!("Read error: {e}");
+                    process::exit(1);
+                }
+            }
+        }
+        "write" => {
+            // ehatrom write <i2c-dev> <address> <input.bin>
+            if args.len() != 5 {
+                eprintln!("Usage: ehatrom write <i2c-dev> <address> <input.bin>");
+                process::exit(1);
+            }
+            let dev = &args[2];
+            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16)
+                .unwrap_or_else(|_| {
+                    eprintln!("Invalid address: {}", args[3]);
+                    process::exit(1);
+                });
+            let data = match std::fs::read(&args[4]) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("Failed to read input: {e}");
+                    process::exit(1);
+                }
+            };
+            match Eeprom::from_bytes(&data) {
+                Ok(eeprom) => {
+                    if let Err(e) = eeprom.write_to_i2c(dev, addr) {
+                        eprintln!("Write error: {e}");
+                        process::exit(1);
+                    }
+                    println!("EEPROM written from {}", args[4]);
+                }
+                Err(e) => {
+                    eprintln!("Parse error: {e}");
+                    process::exit(1);
+                }
+            }
+        }
+        "info" => {
+            // ehatrom info <input.bin>
+            if args.len() != 3 {
+                eprintln!("Usage: ehatrom info <input.bin>");
+                process::exit(1);
+            }
+            let data = match std::fs::read(&args[2]) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("Failed to read input: {e}");
+                    process::exit(1);
+                }
+            };
+            match Eeprom::from_bytes(&data) {
+                Ok(eeprom) => {
+                    println!("EEPROM info:\n{:#?}", eeprom);
+                }
+                Err(e) => {
+                    eprintln!("Parse error: {e}");
+                    process::exit(1);
+                }
+            }
+        }
+        _ => {
+            eprintln!("Unknown command: {}", args[1]);
+            eprintln!("Usage: ehatrom <read|write|info> [options]");
+            process::exit(1);
+        }
     }
 }
