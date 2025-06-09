@@ -38,6 +38,8 @@
 use core::fmt;
 use crc32fast::Hasher;
 #[cfg(target_os = "linux")]
+use i2cdev::core::I2CDevice;
+#[cfg(target_os = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
 
 #[repr(C, packed)]
