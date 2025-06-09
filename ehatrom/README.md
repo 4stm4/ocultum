@@ -134,6 +134,9 @@ Commands:
   read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file
   write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device
   info <input.bin>                        Show parsed EEPROM info from file
+  dumpjson <input.bin>                    Show EEPROM info as pretty JSON
+  dumpyaml <input.bin>                    Show EEPROM info as YAML
+  dumpxml <input.bin>                     Show EEPROM info as XML
 ```
 
 Examples:
@@ -145,8 +148,17 @@ sudo ehatrom read /dev/i2c-0 0x50 dump.bin
 # Write EEPROM from file
 sudo ehatrom write /dev/i2c-0 0x50 dump.bin
 
-# Show EEPROM info
+# Show EEPROM info (pretty Rust struct)
 ./ehatrom info dump.bin
+
+# Show EEPROM info as JSON
+./ehatrom dumpjson dump.bin
+
+# Show EEPROM info as YAML
+./ehatrom dumpyaml dump.bin
+
+# Show EEPROM info as XML
+./ehatrom dumpxml dump.bin
 ```
 
 - All errors and usage info are printed to stderr.

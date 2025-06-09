@@ -1,36 +1,47 @@
-# Базовый образ для сборки
-FROM rust:1.87.0 AS builder
+# Этап сборки CI
+FROM rust:nightly-slim-bookworm AS builder
+
+# Устанавливаем рабочую директорию
+WORKDIR /workspace/ehatrom
+
+# Устанавливаем необходимые компоненты для Rust nightly
+RUN rustup default nightly && \
+    rustup component add rustfmt --toolchain nightly && \
+    rustup component add clippy --toolchain nightly
+
+# Копируем только Cargo.toml и Cargo.lock для кэширования зависимостей
+COPY ehatrom/Cargo.toml ehatrom/Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs && \
+    cargo fetch
+
+# Копируем исходный код
+COPY ehatrom/src ./src/
+
+# Проверка форматирования
+RUN cargo +nightly fmt -- --check
+
+# Линтинг с Clippy
+RUN cargo +nightly clippy --workspace --all-targets -- -D warnings
+
+# Сборка всех целей
+RUN cargo build --workspace --all-targets --verbose
+
+# Запуск тестов
+RUN cargo test --workspace --all-targets --verbose
+
+# Этап сборки релизных артефактов (аналог release job)
+FROM rust:nightly-slim-bookworm AS release
 
 WORKDIR /workspace/ehatrom
 
-# Установка зависимостей для grcov
-RUN apt-get update && apt-get install -y llvm && rm -rf /var/lib/apt/lists/*
-RUN rustup component add llvm-tools-preview && \
-    cargo install grcov
+# Копируем зависимости и исходный код из этапа builder
+COPY --from=builder /workspace/ehatrom /workspace/ehatrom
 
-# Кэширование зависимостей
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release || true
-
-# Копирование исходников
-COPY src ./src/
-
-# Форматирование
-RUN cargo fmt -- --check || true
-
-# Проверка линтером
-RUN cargo clippy --workspace --all-targets -- -D warnings || true
-
-# Сборка и тесты
-RUN cargo build --workspace --all-targets --verbose
-RUN cargo test --workspace --all-targets --verbose || true
-
-# Генерация отчета о покрытии
-RUN cargo test --workspace --all-targets --no-fail-fast -- --nocapture && \
-    grcov . -s . -t lcov --llvm --branch --ignore-not-existing -o lcov.info || true
+# Сборка релизной версии
+RUN cargo build --release --workspace --verbose
 
 # Финальный этап для артефактов
 FROM scratch AS artifact
-COPY --from=builder /workspace/ehatrom/lcov.info /lcov.info
-COPY --from=builder /workspace/ehatrom/target/release /release
+
+# Копируем релизные бинарные файлы
+COPY --from=release /workspace/ehatrom/target/release/ehatrom /ehatrom

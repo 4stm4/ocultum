@@ -41,9 +41,10 @@ use crc32fast::Hasher;
 use i2cdev::core::I2CDevice;
 #[cfg(target_os = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
+use serde::{Serialize, Deserialize};
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct EepromHeader {
     pub signature: [u8; 4], // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
     pub version: u8,        // Format version (0x01 for first version)
@@ -65,7 +66,7 @@ impl Default for EepromHeader {
 }
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AtomHeader {
     pub atom_type: u8, // Atom type
     pub count: u8,     // Number of structures in atom (usually 1)
@@ -74,7 +75,7 @@ pub struct AtomHeader {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AtomType {
     VendorInfo = 0x01,
     GpioMapBank0 = 0x02,
@@ -84,7 +85,7 @@ pub enum AtomType {
 }
 
 #[repr(C, packed)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct VendorInfoAtom {
     pub vendor_id: u16,    // Vendor ID
     pub product_id: u16,   // Product ID
@@ -114,21 +115,21 @@ impl fmt::Debug for VendorInfoAtom {
 }
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct GpioMapAtom {
     pub flags: u16,     // Флаги GPIO
     pub pins: [u8; 28], // Карта пинов (28 пинов на банк)
 }
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DtBlobAtom {
     pub dlen: u32, // Длина blob
                    // Следом идут данные blob (dlen байт)
 }
 
 #[repr(C, packed)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct CustomAtom<const N: usize> {
     pub atom_type: u8, // Пользовательский тип атома (>= 0x80)
     pub data: [u8; N], // Пользовательские данные
@@ -161,7 +162,7 @@ pub enum EepromAtom {
     Custom(Vec<u8>, u8), // (данные, тип)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Eeprom {
     pub header: EepromHeader,
     pub vendor_info: VendorInfoAtom,
