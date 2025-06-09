@@ -218,10 +218,7 @@ impl<const N: usize> core::fmt::Display for CustomAtom<N> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let atom_type = self.atom_type;
         let data = self.data;
-        write!(
-            f,
-            "atom_type: 0x{atom_type:02X}\ndata: {data:02X?}"
-        )
+        write!(f, "atom_type: 0x{atom_type:02X}\ndata: {data:02X?}")
     }
 }
 
