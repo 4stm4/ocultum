@@ -31,10 +31,11 @@ fn main() {
             #[cfg(target_os = "linux")]
             {
                 let dev = &args[2];
-                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                    eprintln!("Invalid address: {}", args[3]);
-                    process::exit(1);
-                });
+                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
+                    .unwrap_or_else(|_| {
+                        eprintln!("Invalid address: {}", args[3]);
+                        process::exit(1);
+                    });
                 let buf = vec![0u8; 256];
                 let mut buf = buf; // для совместимости с сигнатурой
                 match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
@@ -66,10 +67,11 @@ fn main() {
             #[cfg(target_os = "linux")]
             {
                 let dev = &args[2];
-                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                    eprintln!("Invalid address: {}", args[3]);
-                    process::exit(1);
-                });
+                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
+                    .unwrap_or_else(|_| {
+                        eprintln!("Invalid address: {}", args[3]);
+                        process::exit(1);
+                    });
                 let data = match std::fs::read(&args[4]) {
                     Ok(d) => d,
                     Err(e) => {
