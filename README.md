@@ -1,30 +1,30 @@
 # ocultum
 
-## Запуск тестов
+## Running tests
 
-Для запуска unit-тестов библиотеки выполните:
+To run the library unit tests, execute:
 
 ```
 cargo test
 ```
 
-## Запуск чтения реального EEPROM
+## Running real EEPROM read
 
-Для работы с реальным EEPROM по I2C (например, на Raspberry Pi):
+To work with a real EEPROM via I2C (for example, on a Raspberry Pi):
 
-1. Убедитесь, что устройство доступно по нужному адресу (например, /dev/i2c-0, адрес 0x50).
-2. Соберите и запустите пример:
+1. Make sure the device is available at the required address (e.g., /dev/i2c-0, address 0x50).
+2. Build and run the example:
 
 ```
 cargo run
 ```
 
-Если требуется доступ к устройству, используйте:
+If device access is required, use:
 
 ```
 sudo cargo run
 ```
 
-## Пример кода
+## Code example
 
-В файле `src/main.rs` реализован пример чтения EEPROM по I2C и проверки валидности данных.
+The file `src/main.rs` contains an example of reading EEPROM via I2C and checking data validity.
