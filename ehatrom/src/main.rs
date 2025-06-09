@@ -11,7 +11,7 @@
 fn main() {
     // Импортируем I2C-функции только на Linux
     use ehatrom::Eeprom;
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux"))]
     use ehatrom::{read_from_eeprom_i2c, write_to_eeprom_i2c};
     use std::env;
     use std::process;
