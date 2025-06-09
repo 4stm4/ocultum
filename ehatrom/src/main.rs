@@ -118,7 +118,6 @@ fn main() {
                 }
             }
         }
-        // Удалены команды dumpjson, dumpyaml, dumpxml (требовали serde)
         "dumptext" => {
             // ehatrom dumptext <input.eeprom>
             if args.len() != 3 {

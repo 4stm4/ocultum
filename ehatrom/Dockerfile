@@ -2,8 +2,8 @@ FROM rustlang/rust:nightly
 
 WORKDIR /ehatrom
 
-# Копируем проект внутрь контейнера
-COPY ehatrom/ .
+# Копируем весь текущий каталог (предполагаем, что он содержит Cargo.toml и src/)
+COPY . .
 
 # Устанавливаем компоненты rustfmt и clippy
 RUN rustup component add rustfmt clippy
