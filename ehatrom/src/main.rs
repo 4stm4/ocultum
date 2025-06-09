@@ -9,7 +9,7 @@
 // \___/ \___|\__,_|_|\__|\__,_|_| |_| |_|
 
 fn main() {
-    use ehatrom::Eeprom;
+    use ehatrom::{Eeprom, read_from_eeprom_i2c, write_to_eeprom_i2c};
     use std::env;
     use std::process;
 
@@ -26,14 +26,15 @@ fn main() {
                 process::exit(1);
             }
             let dev = &args[2];
-            let addr =
-                u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                    eprintln!("Invalid address: {}", args[3]);
-                    process::exit(1);
-                });
-            match Eeprom::read_from_i2c(dev, addr) {
-                Ok(eeprom) => {
-                    if let Err(e) = std::fs::write(&args[4], eeprom.to_bytes()) {
+            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
+                eprintln!("Invalid address: {}", args[3]);
+                process::exit(1);
+            });
+            let mut buf = vec![0u8; 256];
+            #[cfg(target_os = "linux")]
+            match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
+                Ok(()) => {
+                    if let Err(e) = std::fs::write(&args[4], &buf) {
                         eprintln!("Failed to write output: {e}");
                         process::exit(1);
                     }
@@ -44,6 +45,11 @@ fn main() {
                     process::exit(1);
                 }
             }
+            #[cfg(not(target_os = "linux"))]
+            {
+                eprintln!("I2C read is only supported on Linux");
+                process::exit(1);
+            }
         }
         "write" => {
             // ehatrom write <i2c-dev> <address> <input.bin>
@@ -52,11 +58,10 @@ fn main() {
                 process::exit(1);
             }
             let dev = &args[2];
-            let addr =
-                u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
-                    eprintln!("Invalid address: {}", args[3]);
-                    process::exit(1);
-                });
+            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
+                eprintln!("Invalid address: {}", args[3]);
+                process::exit(1);
+            });
             let data = match std::fs::read(&args[4]) {
                 Ok(d) => d,
                 Err(e) => {
@@ -64,18 +69,20 @@ fn main() {
                     process::exit(1);
                 }
             };
-            match Eeprom::from_bytes(&data) {
-                Ok(eeprom) => {
-                    if let Err(e) = eeprom.write_to_i2c(dev, addr) {
-                        eprintln!("Write error: {e}");
-                        process::exit(1);
-                    }
+            #[cfg(target_os = "linux")]
+            match write_to_eeprom_i2c(&data, dev, addr) {
+                Ok(()) => {
                     println!("EEPROM written from {}", args[4]);
                 }
                 Err(e) => {
-                    eprintln!("Parse error: {e}");
+                    eprintln!("Write error: {e}");
                     process::exit(1);
                 }
+            }
+            #[cfg(not(target_os = "linux"))]
+            {
+                eprintln!("I2C write is only supported on Linux");
+                process::exit(1);
             }
         }
         "info" => {

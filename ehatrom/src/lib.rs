@@ -160,6 +160,7 @@ pub enum EepromAtom {
     Custom(Vec<u8>, u8), // (данные, тип)
 }
 
+#[derive(Debug, Clone)]
 pub struct Eeprom {
     pub header: EepromHeader,
     pub vendor_info: VendorInfoAtom,
@@ -460,6 +461,9 @@ pub fn read_from_eeprom_i2c(
     dev.read(buf)?;
     Ok(())
 }
+
+#[cfg(target_os = "linux")]
+pub use self::{read_from_eeprom_i2c, write_to_eeprom_i2c};
 
 impl VendorInfoAtom {
     /// Creates VendorInfoAtom from strings (automatically trims/pads with zeros)
