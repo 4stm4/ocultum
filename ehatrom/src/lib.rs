@@ -41,10 +41,9 @@ use crc32fast::Hasher;
 use i2cdev::core::I2CDevice;
 #[cfg(feature = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
-use serde::{Deserialize, Serialize};
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct EepromHeader {
     pub signature: [u8; 4], // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
     pub version: u8,        // Format version (0x01 for first version)
@@ -66,7 +65,7 @@ impl Default for EepromHeader {
 }
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct AtomHeader {
     pub atom_type: u8, // Atom type
     pub count: u8,     // Number of structures in atom (usually 1)
@@ -75,7 +74,7 @@ pub struct AtomHeader {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AtomType {
     VendorInfo = 0x01,
     GpioMapBank0 = 0x02,
@@ -85,7 +84,7 @@ pub enum AtomType {
 }
 
 #[repr(C, packed)]
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy)]
 pub struct VendorInfoAtom {
     pub vendor_id: u16,    // Vendor ID
     pub product_id: u16,   // Product ID
@@ -114,18 +113,79 @@ impl fmt::Debug for VendorInfoAtom {
     }
 }
 
+impl core::fmt::Display for EepromHeader {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let signature = self.signature;
+        let version = self.version;
+        let reserved = self.reserved;
+        let numatoms = self.numatoms;
+        let eeplen = self.eeplen;
+        write!(
+            f,
+            "signature: {signature:?}\nversion: {version}\nreserved: {reserved}\nnumatoms: {numatoms}\neeplen: {eeplen}"
+        )
+    }
+}
+
+impl core::fmt::Display for AtomHeader {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let atom_type = self.atom_type;
+        let count = self.count;
+        let dlen = self.dlen;
+        let reserved = self.reserved;
+        write!(
+            f,
+            "atom_type: 0x{atom_type:02X}\ncount: {count}\ndlen: {dlen}\nreserved: {reserved}",
+        )
+    }
+}
+
+impl core::fmt::Display for VendorInfoAtom {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let vendor_id = self.vendor_id;
+        let product_id = self.product_id;
+        let product_ver = self.product_ver;
+        let vendor_buf = self.vendor;
+        let product_buf = self.product;
+        let uuid = self.uuid;
+        let vendor_string = String::from_utf8_lossy(&vendor_buf);
+        let vendor = vendor_string.trim_end_matches('\0');
+        let product_string = String::from_utf8_lossy(&product_buf);
+        let product = product_string.trim_end_matches('\0');
+        write!(
+            f,
+            "vendor_id: 0x{vendor_id:04X}\nproduct_id: 0x{product_id:04X}\nproduct_ver: {product_ver}\nvendor: {vendor}\nproduct: {product}\nuuid: {uuid:02X?}"
+        )
+    }
+}
+
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct GpioMapAtom {
     pub flags: u16,     // Флаги GPIO
     pub pins: [u8; 28], // Карта пинов (28 пинов на банк)
 }
 
+impl core::fmt::Display for GpioMapAtom {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let flags = self.flags;
+        let pins = self.pins;
+        write!(f, "flags: 0x{flags:04X}\npins: {pins:?}")
+    }
+}
+
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct DtBlobAtom {
     pub dlen: u32, // Длина blob
                    // Следом идут данные blob (dlen байт)
+}
+
+impl core::fmt::Display for DtBlobAtom {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let dlen = self.dlen;
+        write!(f, "dlen: {dlen} (blob data not shown)")
+    }
 }
 
 #[repr(C, packed)]
@@ -154,6 +214,17 @@ impl<const N: usize> fmt::Debug for CustomAtom<N> {
     }
 }
 
+impl<const N: usize> core::fmt::Display for CustomAtom<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let atom_type = self.atom_type;
+        let data = self.data;
+        write!(
+            f,
+            "atom_type: 0x{atom_type:02X}\ndata: {data:02X?}"
+        )
+    }
+}
+
 pub enum EepromAtom {
     VendorInfo(VendorInfoAtom),
     GpioMapBank0(GpioMapAtom),
@@ -162,7 +233,7 @@ pub enum EepromAtom {
     Custom(Vec<u8>, u8), // (данные, тип)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Eeprom {
     pub header: EepromHeader,
     pub vendor_info: VendorInfoAtom,
@@ -491,5 +562,26 @@ impl VendorInfoAtom {
             product: product_arr,
             uuid,
         }
+    }
+}
+
+impl core::fmt::Display for Eeprom {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        writeln!(f, "EEPROM Header:\n{}", self.header)?;
+        writeln!(f, "\nVendor Info:\n{}", self.vendor_info)?;
+        writeln!(f, "\nGPIO Map Bank0:\n{}", self.gpio_map_bank0)?;
+        if let Some(ref dt_blob) = self.dt_blob {
+            writeln!(f, "\nDT Blob: {} bytes", dt_blob.len())?;
+        }
+        if let Some(ref bank1) = self.gpio_map_bank1 {
+            writeln!(f, "\nGPIO Map Bank1:\n{bank1}")?
+        }
+        if !self.custom_atoms.is_empty() {
+            writeln!(f, "\nCustom Atoms:")?;
+            for (typ, data) in &self.custom_atoms {
+                writeln!(f, "  type: 0x{typ:02X}, data: {data:02X?}")?
+            }
+        }
+        Ok(())
     }
 }

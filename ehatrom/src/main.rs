@@ -118,10 +118,11 @@ fn main() {
                 }
             }
         }
-        "dumpjson" => {
-            // ehatrom dumpjson <input.bin>
+        // Удалены команды dumpjson, dumpyaml, dumpxml (требовали serde)
+        "dumptext" => {
+            // ehatrom dumptext <input.eeprom>
             if args.len() != 3 {
-                eprintln!("Usage: ehatrom dumpjson <input.bin>");
+                eprintln!("Usage: ehatrom dumptext <input.eeprom>");
                 process::exit(1);
             }
             let data = match std::fs::read(&args[2]) {
@@ -132,67 +133,7 @@ fn main() {
                 }
             };
             match Eeprom::from_bytes(&data) {
-                Ok(eeprom) => match serde_json::to_string_pretty(&eeprom) {
-                    Ok(json) => println!("{json}"),
-                    Err(e) => {
-                        eprintln!("JSON serialization error: {e}");
-                        process::exit(1);
-                    }
-                },
-                Err(e) => {
-                    eprintln!("Parse error: {e}");
-                    process::exit(1);
-                }
-            }
-        }
-        "dumpyaml" => {
-            // ehatrom dumpyaml <input.bin>
-            if args.len() != 3 {
-                eprintln!("Usage: ehatrom dumpyaml <input.bin>");
-                process::exit(1);
-            }
-            let data = match std::fs::read(&args[2]) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("Failed to read input: {e}");
-                    process::exit(1);
-                }
-            };
-            match Eeprom::from_bytes(&data) {
-                Ok(eeprom) => match serde_yaml::to_string(&eeprom) {
-                    Ok(yaml) => println!("{yaml}"),
-                    Err(e) => {
-                        eprintln!("YAML serialization error: {e}");
-                        process::exit(1);
-                    }
-                },
-                Err(e) => {
-                    eprintln!("Parse error: {e}");
-                    process::exit(1);
-                }
-            }
-        }
-        "dumpxml" => {
-            // ehatrom dumpxml <input.bin>
-            if args.len() != 3 {
-                eprintln!("Usage: ehatrom dumpxml <input.bin>");
-                process::exit(1);
-            }
-            let data = match std::fs::read(&args[2]) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("Failed to read input: {e}");
-                    process::exit(1);
-                }
-            };
-            match Eeprom::from_bytes(&data) {
-                Ok(eeprom) => match serde_xml_rs::to_string(&eeprom) {
-                    Ok(xml) => println!("{xml}"),
-                    Err(e) => {
-                        eprintln!("XML serialization error: {e}");
-                        process::exit(1);
-                    }
-                },
+                Ok(eeprom) => println!("{eeprom}"),
                 Err(e) => {
                     eprintln!("Parse error: {e}");
                     process::exit(1);
