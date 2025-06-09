@@ -26,8 +26,8 @@ fn main() {
                 process::exit(1);
             }
             let dev = &args[2];
-            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16)
-                .unwrap_or_else(|_| {
+            let addr =
+                u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
                     eprintln!("Invalid address: {}", args[3]);
                     process::exit(1);
                 });
@@ -52,8 +52,8 @@ fn main() {
                 process::exit(1);
             }
             let dev = &args[2];
-            let addr = u16::from_str_radix(&args[3].trim_start_matches("0x"), 16)
-                .unwrap_or_else(|_| {
+            let addr =
+                u16::from_str_radix(&args[3].trim_start_matches("0x"), 16).unwrap_or_else(|_| {
                     eprintln!("Invalid address: {}", args[3]);
                     process::exit(1);
                 });
