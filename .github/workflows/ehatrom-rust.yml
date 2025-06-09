@@ -3,6 +3,7 @@ name: Ehatrom Rust CI
 on:
   push:
     branches: [ main ]
+    tags: [ '*' ]
   pull_request:
     branches: [ main ]
 
