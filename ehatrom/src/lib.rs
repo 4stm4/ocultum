@@ -41,7 +41,7 @@ use crc32fast::Hasher;
 use i2cdev::core::I2CDevice;
 #[cfg(target_os = "linux")]
 use i2cdev::linux::LinuxI2CDevice;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
