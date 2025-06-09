@@ -18,7 +18,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: ehatrom <read|write|info> [options]");
+        eprintln!("Usage: ehatrom <read|write|show> [options]");
         process::exit(1);
     }
     match args[1].as_str() {
@@ -95,10 +95,10 @@ fn main() {
                 process::exit(1);
             }
         }
-        "info" => {
-            // ehatrom info <input.bin>
+        "show" => {
+            // ehatrom show <input.bin>
             if args.len() != 3 {
-                eprintln!("Usage: ehatrom info <input.bin>");
+                eprintln!("Usage: ehatrom show <input.bin>");
                 process::exit(1);
             }
             let data = match std::fs::read(&args[2]) {
@@ -118,30 +118,9 @@ fn main() {
                 }
             }
         }
-        "dumptext" => {
-            // ehatrom dumptext <input.eeprom>
-            if args.len() != 3 {
-                eprintln!("Usage: ehatrom dumptext <input.eeprom>");
-                process::exit(1);
-            }
-            let data = match std::fs::read(&args[2]) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("Failed to read input: {e}");
-                    process::exit(1);
-                }
-            };
-            match Eeprom::from_bytes(&data) {
-                Ok(eeprom) => println!("{eeprom}"),
-                Err(e) => {
-                    eprintln!("Parse error: {e}");
-                    process::exit(1);
-                }
-            }
-        }
         _ => {
             eprintln!("Unknown command: {}", args[1]);
-            eprintln!("Usage: ehatrom <read|write|info> [options]");
+            eprintln!("Usage: ehatrom <read|write|show> [options]");
             process::exit(1);
         }
     }

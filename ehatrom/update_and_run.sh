@@ -10,4 +10,8 @@ echo "=== CARGO BUILD ==="
 cargo build
 
 echo "=== CARGO RUN ==="
-cargo run
+cargo run || true
+
+echo "=== EEPROM INFO EXAMPLE ==="
+echo "Чтобы вывести содержимое дампа EEPROM, используйте:"
+echo "sudo ./target/release/ehatrom show dump.bin"
