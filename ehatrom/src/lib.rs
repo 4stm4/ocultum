@@ -129,7 +129,7 @@ pub struct DtBlobAtom {
 }
 
 #[repr(C, packed)]
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy)]
 pub struct CustomAtom<const N: usize> {
     pub atom_type: u8, // Пользовательский тип атома (>= 0x80)
     pub data: [u8; N], // Пользовательские данные

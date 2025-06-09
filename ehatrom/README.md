@@ -152,13 +152,13 @@ sudo ehatrom write /dev/i2c-0 0x50 dump.bin
 ./ehatrom info dump.bin
 
 # Show EEPROM info as JSON
-./ehatrom dumpjson dump.bin
+./ehatrom dumpjson dump.eeprom
 
 # Show EEPROM info as YAML
-./ehatrom dumpyaml dump.bin
+./ehatrom dumpyaml dump.eeprom
 
 # Show EEPROM info as XML
-./ehatrom dumpxml dump.bin
+./ehatrom dumpxml dump.eeprom
 ```
 
 - All errors and usage info are printed to stderr.

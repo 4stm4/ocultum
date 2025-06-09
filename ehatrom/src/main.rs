@@ -134,7 +134,7 @@ fn main() {
             match Eeprom::from_bytes(&data) {
                 Ok(eeprom) => {
                     match serde_json::to_string_pretty(&eeprom) {
-                        Ok(json) => println!("{}", json),
+                        Ok(json) => println!("{json}"),
                         Err(e) => {
                             eprintln!("JSON serialization error: {e}");
                             process::exit(1);
@@ -163,7 +163,7 @@ fn main() {
             match Eeprom::from_bytes(&data) {
                 Ok(eeprom) => {
                     match serde_yaml::to_string(&eeprom) {
-                        Ok(yaml) => println!("{}", yaml),
+                        Ok(yaml) => println!("{yaml}"),
                         Err(e) => {
                             eprintln!("YAML serialization error: {e}");
                             process::exit(1);
@@ -192,7 +192,7 @@ fn main() {
             match Eeprom::from_bytes(&data) {
                 Ok(eeprom) => {
                     match serde_xml_rs::to_string(&eeprom) {
-                        Ok(xml) => println!("{}", xml),
+                        Ok(xml) => println!("{xml}"),
                         Err(e) => {
                             eprintln!("XML serialization error: {e}");
                             process::exit(1);
