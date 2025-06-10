@@ -11,7 +11,6 @@
 //! - [Documentation (docs.rs)](https://docs.rs/ehatrom)
 //! - [GitHub](https://github.com/4stm4/ocultum/tree/main/ehatrom)
 
-
 use core::fmt;
 use crc32fast::Hasher;
 

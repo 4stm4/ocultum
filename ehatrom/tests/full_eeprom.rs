@@ -26,7 +26,7 @@ fn base_eeprom() -> Eeprom {
 fn test_eeprom_validity() {
     let mut eeprom = base_eeprom();
     assert!(eeprom.is_valid());
-    
+
     eeprom.header.signature = [0; 4];
     assert!(!eeprom.is_valid());
 }
