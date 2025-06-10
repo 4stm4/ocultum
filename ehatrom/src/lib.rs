@@ -8,52 +8,36 @@
 //| (_) | (__| |_| | | |_| |_| | | | | | |
 // \___/ \___|\__,_|_|\__|\__,_|_| |_| |_|
 //! # ehatrom — EEPROM HAT library for Raspberry Pi HATs
-//!
-//! EEPROM (de)serialization, I2C read/write (Linux), CRC32, custom atoms, CLI example.
-//!
 //! - [Documentation (docs.rs)](https://docs.rs/ehatrom)
-//! - [GitHub](https://github.com/youruser/ehatrom)
-//!
-//! ## Example
-//!
-//! ```rust
-//! use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom};
-//!
-//! let vendor_info = VendorInfoAtom::new(
-//!     0x1234, 0x5678, 1, "MyVendor", "MyHAT", [0u8; 16]
-//! );
-//! let gpio = GpioMapAtom { flags: 0, pins: [0; 28] };
-//! let mut eeprom = Eeprom {
-//!     header: Default::default(),
-//!     vendor_info,
-//!     gpio_map_bank0: gpio,
-//!     dt_blob: None,
-//!     gpio_map_bank1: None,
-//!     custom_atoms: vec![],
-//! };
-//! eeprom.update_header();
-//! ```
-//!
+//! - [GitHub](https://github.com/4stm4/ocultum/tree/main/ehatrom)
+
 
 use core::fmt;
 use crc32fast::Hasher;
-#[cfg(feature = "linux")]
-use i2cdev::core::I2CDevice;
-#[cfg(feature = "linux")]
-use i2cdev::linux::LinuxI2CDevice;
 
+#[cfg(feature = "linux")]
+use i2cdev::{core::I2CDevice, linux::LinuxI2CDevice};
+
+/// EEPROM header structure for Raspberry Pi
+/// The header is always 12 bytes long and follows the packed representation.
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct EepromHeader {
-    pub signature: [u8; 4], // Always 0x52 0x2D 0x50 0x69 ("R-Pi")
-    pub version: u8,        // Format version (0x01 for first version)
-    pub reserved: u8,       // 0x00
-    pub numatoms: u16,      // Количество атомов (Little Endian)
-    pub eeplen: u32,        // Общая длина данных EEPROM (LE)
+    /// Always 0x52 0x2D 0x50 0x69 ("R-Pi")
+    pub signature: [u8; 4],
+    /// Format version (0x01 for first version)
+    pub version: u8,
+    /// Reserved byte (0x00)
+    pub reserved: u8,
+    /// Number of atoms (Little Endian)
+    pub numatoms: u16,
+    /// Total length of EEPROM data (Little Endian)
+    pub eeplen: u32,
 }
 
-impl Default for EepromHeader {
-    fn default() -> Self {
+impl EepromHeader {
+    /// Creates a new EepromHeader with default values
+    pub const fn new() -> Self {
         EepromHeader {
             signature: *b"R-Pi",
             version: 1,
