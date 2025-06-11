@@ -47,13 +47,18 @@ impl EepromHeader {
     }
 }
 
+/// Main structure representing EEPROM atom header
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct AtomHeader {
-    pub atom_type: u8, // Atom type
-    pub count: u8,     // Number of structures in atom (usually 1)
-    pub dlen: u16,     // Data length (LE)
-    pub reserved: u32, // Reserved (0)
+    /// Type identifier of the atom (e.g. 0xD0 for vendor info)
+    pub atom_type: u8,
+    /// Number of structures in this atom (typically 1)
+    pub count: u8,
+    /// Length of atom data in bytes (Little Endian)
+    pub dlen: u16,
+    /// Reserved field (must be 0)
+    pub reserved: u32,
 }
 
 #[repr(u8)]
@@ -145,8 +150,8 @@ impl core::fmt::Display for VendorInfoAtom {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct GpioMapAtom {
-    pub flags: u16,     // Флаги GPIO
-    pub pins: [u8; 28], // Карта пинов (28 пинов на банк)
+    pub flags: u16,
+    pub pins: [u8; 28],
 }
 
 impl core::fmt::Display for GpioMapAtom {
@@ -160,8 +165,7 @@ impl core::fmt::Display for GpioMapAtom {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct DtBlobAtom {
-    pub dlen: u32, // Длина blob
-                   // Следом идут данные blob (dlen байт)
+    pub dlen: u32,
 }
 
 impl core::fmt::Display for DtBlobAtom {
@@ -174,13 +178,12 @@ impl core::fmt::Display for DtBlobAtom {
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
 pub struct CustomAtom<const N: usize> {
-    pub atom_type: u8, // Пользовательский тип атома (>= 0x80)
-    pub data: [u8; N], // Пользовательские данные
+    pub atom_type: u8,
+    pub data: [u8; N],
 }
 
 impl<const N: usize> fmt::Debug for CustomAtom<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Безопасно копируем packed-поле data
         let self_ptr = self as *const Self as *const u8;
         let data_offset = core::mem::size_of::<u8>();
         let data_ptr = unsafe { self_ptr.add(data_offset) };
@@ -210,7 +213,7 @@ pub enum EepromAtom {
     GpioMapBank0(GpioMapAtom),
     DtBlob(Vec<u8>),
     GpioMapBank1(GpioMapAtom),
-    Custom(Vec<u8>, u8), // (данные, тип)
+    Custom(Vec<u8>, u8),
 }
 
 #[derive(Debug, Clone)]
@@ -223,7 +226,6 @@ pub struct Eeprom {
     pub custom_atoms: Vec<(u8, Vec<u8>)>, // (atom_type, data)
 }
 
-// Можно добавить функции для парсинга и работы с этими структурами
 impl Eeprom {
     /// Reads EEPROM structure from a byte slice
     pub fn from_bytes(data: &[u8]) -> Result<Self, &'static str> {
@@ -508,7 +510,7 @@ pub fn read_from_eeprom_i2c(
     offset: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut dev = LinuxI2CDevice::new(dev_path, addr)?;
-    // Сначала отправляем 2 байта offset (старший, младший)
+    // Send 2-byte offset first (high byte, low byte)
     let offset_bytes = [(offset >> 8) as u8, (offset & 0xFF) as u8];
     dev.write(&offset_bytes)?;
     dev.read(buf)?;

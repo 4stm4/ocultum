@@ -9,7 +9,7 @@
 // \___/ \___|\__,_|_|\__|\__,_|_| |_| |_|
 
 fn main() {
-    // Импортируем I2C-функции только на Linux
+    // Import I2C functions only on Linux
     use ehatrom::Eeprom;
     #[cfg(all(target_os = "linux", feature = "linux"))]
     use ehatrom::{read_from_eeprom_i2c, write_to_eeprom_i2c};
@@ -37,7 +37,7 @@ fn main() {
                         process::exit(1);
                     });
                 let buf = vec![0u8; 256];
-                let mut buf = buf; // для совместимости с сигнатурой
+                let mut buf = buf; // for compatibility with function signature
                 match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
                     Ok(()) => {
                         if let Err(e) = std::fs::write(&args[4], &buf) {
