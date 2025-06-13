@@ -109,7 +109,7 @@ mod tests {
 
         // This should produce a consistent CRC32 value
         // The exact value depends on the input, but it should be deterministic
-        println!("CRC32 for R-Pi header: 0x{result:08X}");
+        // println!("CRC32 for R-Pi header: 0x{result:08X}");
         assert_ne!(result, 0); // Should not be zero for this data
     }
 

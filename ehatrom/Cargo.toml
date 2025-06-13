@@ -1,6 +1,6 @@
 [package]
 name = "ehatrom"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "EEPROM HAT library for Raspberry Pi HATs (serialization, I2C, CRC32, custom atoms)"
 repository = "https://github.com/4stm4/ocultum"
@@ -23,5 +23,7 @@ exclude = [
 i2cdev = { version = "0.6", optional = true }
 
 [features]
-default = []
-linux = ["i2cdev"]
+default = ["alloc"]
+alloc = []
+std = ["alloc"]
+linux = ["i2cdev", "std"]

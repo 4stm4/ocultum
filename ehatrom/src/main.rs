@@ -64,9 +64,10 @@ fn main() {
                     }
                 }
             }
-            #[cfg(not(all(target_os = "linux", feature = "linux")))]
+            #[cfg(not(feature = "linux"))]
             {
-                eprintln!("I2C read is only supported on Linux with --features=linux");
+                eprintln!("I2C read requires --features=linux");
+                eprintln!("Please rebuild with: cargo build --features linux");
                 process::exit(1);
             }
         }
@@ -101,9 +102,10 @@ fn main() {
                     }
                 }
             }
-            #[cfg(not(all(target_os = "linux", feature = "linux")))]
+            #[cfg(not(feature = "linux"))]
             {
-                eprintln!("I2C write is only supported on Linux with --features=linux");
+                eprintln!("I2C write requires --features=linux");
+                eprintln!("Please rebuild with: cargo build --features linux");
                 process::exit(1);
             }
         }
@@ -132,40 +134,62 @@ fn main() {
         }
         "detect" => {
             // ehatrom detect [i2c-dev] or ehatrom detect --all
-            #[cfg(all(target_os = "linux", feature = "linux"))]
+            #[cfg(feature = "linux")]
             {
-                use ehatrom::{detect_all_i2c_devices, detect_and_show_eeprom_info};
+                #[cfg(target_os = "linux")]
+                {
+                    use ehatrom::{detect_all_i2c_devices, detect_and_show_eeprom_info};
 
-                if args.len() >= 3 && args[2] == "--all" {
-                    // Scan all I2C devices
-                    match detect_all_i2c_devices() {
-                        Ok(()) => {}
-                        Err(e) => {
-                            eprintln!("Detection error: {e}");
-                            process::exit(1);
+                    if args.len() >= 3 && args[2] == "--all" {
+                        // Scan all I2C devices
+                        match detect_all_i2c_devices() {
+                            Ok(()) => {}
+                            Err(e) => {
+                                eprintln!("Detection error: {e}");
+                                process::exit(1);
+                            }
                         }
-                    }
-                } else {
-                    // Scan specific device or default
-                    let dev = if args.len() >= 3 {
-                        &args[2]
                     } else {
-                        "/dev/i2c-0" // HAT EEPROM is typically on i2c-0
-                    };
-                    let possible_addrs = &[0x50]; // HAT EEPROM is always at 0x50
-                    let read_len = 1024; // read up to 1KB
-                    match detect_and_show_eeprom_info(dev, possible_addrs, read_len) {
-                        Ok(()) => {}
-                        Err(e) => {
-                            eprintln!("Detection error: {e}");
-                            process::exit(1);
+                        // Scan specific device or default
+                        let dev = if args.len() >= 3 {
+                            &args[2]
+                        } else {
+                            "/dev/i2c-0" // HAT EEPROM is typically on i2c-0
+                        };
+                        let possible_addrs = &[0x50]; // HAT EEPROM is always at 0x50
+                        let read_len = 1024; // read up to 1KB
+                        match detect_and_show_eeprom_info(dev, possible_addrs, read_len) {
+                            Ok(()) => {}
+                            Err(e) => {
+                                eprintln!("Detection error: {e}");
+                                process::exit(1);
+                            }
                         }
                     }
                 }
+                #[cfg(not(target_os = "linux"))]
+                {
+                    println!("Linux feature enabled, but running on non-Linux platform.");
+                    println!("I2C detection requires actual Linux /dev/i2c-* devices.");
+                    println!("This demonstrates that the library compiles with Linux feature on any platform.");
+                    
+                    if args.len() >= 3 && args[2] == "--all" {
+                        println!("Would scan all I2C devices on Linux");
+                    } else {
+                        let dev = if args.len() >= 3 {
+                            &args[2]
+                        } else {
+                            "/dev/i2c-0"
+                        };
+                        println!("Would scan device: {}", dev);
+                        println!("Would check addresses: [0x50]");
+                    }
+                }
             }
-            #[cfg(not(all(target_os = "linux", feature = "linux")))]
+            #[cfg(not(feature = "linux"))]
             {
-                eprintln!("EEPROM detection is only supported on Linux with --features=linux");
+                eprintln!("EEPROM detection requires --features=linux");
+                eprintln!("Please rebuild with: cargo build --features linux");
                 process::exit(1);
             }
         }
