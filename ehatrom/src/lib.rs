@@ -12,7 +12,9 @@
 //! - [GitHub](https://github.com/4stm4/ocultum/tree/main/ehatrom)
 
 use core::fmt;
-use crc32fast::Hasher;
+
+pub mod utils;
+use utils::crc32::Hasher;
 
 #[cfg(feature = "linux")]
 use i2cdev::{core::I2CDevice, linux::LinuxI2CDevice};
@@ -376,7 +378,7 @@ impl Eeprom {
         crc_bytes == crc.to_le_bytes()
     }
 
-    /// Serialize EEPROM structure to Vec<u8> (without CRC)
+    /// Serialize EEPROM structure to `Vec<u8>` (without CRC)
     pub fn serialize(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
         // EEPROM header

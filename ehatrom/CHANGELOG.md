@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.0] — Planned
-- New: Full-featured CLI for reading and writing EEPROM from command line
-- CLI subcommands: `read`, `write`, `info`, with flexible argument parsing
-- Improved error messages and user feedback in CLI
-- Documentation update: CLI usage examples
-- (Planned) Backward-compatible with 0.1.x API
+## [0.2.0] — 2025-06-13
+- **BREAKING**: Removed all serde dependencies (serde, serde_json, serde_yaml, serde-xml-rs)
+- **BREAKING**: Removed JSON/YAML/XML CLI commands, kept only `read`, `write`, `show` 
+- **NEW**: Custom CRC32 implementation - no external dependencies for CRC32
+- **NEW**: Reorganized project structure - all tests in `tests/`, examples in `examples/`
+- **IMPROVED**: Display implementations for all main types (Eeprom, EepromHeader, AtomHeader, etc.)
+- **IMPROVED**: Better error handling and CLI user experience
+- **IMPROVED**: Bare-metal compatibility - minimal dependencies
+- **FIXED**: All clippy warnings and formatting issues
+- **FIXED**: I2C function import issues with proper feature gating
+- Documentation: Updated README, CLI usage examples, Russian comments → English
+- Tests: 16 comprehensive tests including performance tests for CRC32
+- Zero external dependencies by default, only `i2cdev` with "linux" feature
 
 ## [0.1.0] — 2025-06-08
 - Initial release: Raspberry Pi HAT EEPROM library
