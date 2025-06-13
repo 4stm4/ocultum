@@ -519,6 +519,11 @@ pub fn read_from_eeprom_i2c(
     Ok(())
 }
 
+#[cfg(feature = "linux")]
+pub mod detect;
+#[cfg(feature = "linux")]
+pub use detect::detect_and_show_eeprom_info;
+
 impl VendorInfoAtom {
     /// Creates VendorInfoAtom from strings (automatically trims/pads with zeros)
     pub fn new(
