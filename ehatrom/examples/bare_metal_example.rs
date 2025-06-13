@@ -2,7 +2,7 @@
 // Note: This example can be compiled with std for demonstration,
 // but shows how to use the library in no_std context
 
-use ehatrom::{Eeprom, VendorInfoAtom, GpioMapAtom, EepromHeader};
+use ehatrom::{Eeprom, EepromHeader, GpioMapAtom, VendorInfoAtom};
 
 fn main() {
     // This example demonstrates how to use ehatrom in a bare-metal environment
@@ -15,8 +15,10 @@ fn main() {
         0x0001, // product_ver
         "Acme Corp",
         "Test HAT",
-        [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
-         0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        [
+            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+            0x77, 0x88,
+        ],
     );
 
     let gpio_map = GpioMapAtom {
@@ -26,7 +28,7 @@ fn main() {
 
     // Custom atoms with static data
     static CUSTOM_DATA: &[u8] = b"Hello, Bare Metal!";
-    
+
     // In no_std environment, custom_atoms would be a static slice
     #[cfg(not(feature = "alloc"))]
     static CUSTOM_ATOMS: &[(u8, &[u8])] = &[(0x80, CUSTOM_DATA)];
@@ -54,7 +56,7 @@ fn main() {
 
     // Serialize to fixed buffer (demonstrates no heap allocation approach)
     let mut buffer = vec![0u8; 512]; // In real no_std, this would be a static array
-    
+
     #[cfg(feature = "alloc")]
     {
         // Standard allocation-based serialization

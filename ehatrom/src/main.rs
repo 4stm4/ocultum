@@ -122,6 +122,7 @@ fn main() {
                     process::exit(1);
                 }
             };
+            #[cfg(feature = "alloc")]
             match Eeprom::from_bytes(&data) {
                 Ok(eeprom) => {
                     println!("EEPROM info:\n{eeprom:#?}");
@@ -130,6 +131,11 @@ fn main() {
                     eprintln!("Parse error: {e}");
                     process::exit(1);
                 }
+            }
+            #[cfg(not(feature = "alloc"))]
+            {
+                eprintln!("Parse command requires 'alloc' feature");
+                process::exit(1);
             }
         }
         "detect" => {
@@ -171,8 +177,10 @@ fn main() {
                 {
                     println!("Linux feature enabled, but running on non-Linux platform.");
                     println!("I2C detection requires actual Linux /dev/i2c-* devices.");
-                    println!("This demonstrates that the library compiles with Linux feature on any platform.");
-                    
+                    println!(
+                        "This demonstrates that the library compiles with Linux feature on any platform."
+                    );
+
                     if args.len() >= 3 && args[2] == "--all" {
                         println!("Would scan all I2C devices on Linux");
                     } else {

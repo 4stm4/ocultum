@@ -22,7 +22,10 @@ extern crate std;
 use core::fmt;
 
 #[cfg(feature = "alloc")]
-use alloc::{vec::Vec, string::{String, ToString}};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 /// Custom error type for bare-metal compatibility
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -197,7 +200,7 @@ impl core::fmt::Display for VendorInfoAtom {
         let vendor_buf = self.vendor;
         let product_buf = self.product;
         let uuid = self.uuid;
-        
+
         #[cfg(feature = "alloc")]
         {
             let vendor_string = String::from_utf8_lossy(&vendor_buf);
@@ -212,12 +215,20 @@ impl core::fmt::Display for VendorInfoAtom {
         #[cfg(not(feature = "alloc"))]
         {
             // For no_std, find null terminator manually
-            let vendor_len = vendor_buf.iter().position(|&b| b == 0).unwrap_or(vendor_buf.len());
-            let product_len = product_buf.iter().position(|&b| b == 0).unwrap_or(product_buf.len());
-            
+            let vendor_len = vendor_buf
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(vendor_buf.len());
+            let product_len = product_buf
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(product_buf.len());
+
             // Try to display as UTF-8 strings, fallback to hex
-            match (core::str::from_utf8(&vendor_buf[..vendor_len]), 
-                   core::str::from_utf8(&product_buf[..product_len])) {
+            match (
+                core::str::from_utf8(&vendor_buf[..vendor_len]),
+                core::str::from_utf8(&product_buf[..product_len]),
+            ) {
                 (Ok(vendor), Ok(product)) => {
                     write!(
                         f,
@@ -405,7 +416,7 @@ impl Eeprom {
             custom_atoms,
         })
     }
-    
+
     /// Reads EEPROM structure from a byte slice (no_std version)
     /// Returns references to data instead of owned data
     #[cfg(not(feature = "alloc"))]
@@ -427,7 +438,7 @@ impl Eeprom {
         let mut dt_blob = None;
         let mut gpio_map_bank1 = None;
         let custom_atoms: &'static [(u8, &'static [u8])] = &[];
-        
+
         for _ in 0..header.numatoms {
             if data.len() < offset + size_of::<AtomHeader>() {
                 return Err("Not enough data for AtomHeader");
@@ -496,30 +507,30 @@ impl Eeprom {
         self.gpio_map_bank0 = atom;
         self.update_header();
     }
-    
+
     #[cfg(feature = "alloc")]
     pub fn add_dt_blob(&mut self, blob: Vec<u8>) {
         self.dt_blob = Some(blob);
         self.update_header();
     }
-    
+
     #[cfg(not(feature = "alloc"))]
     pub fn add_dt_blob_static(&mut self, blob: &'static [u8]) {
         self.dt_blob = Some(blob);
         self.update_header();
     }
-    
+
     pub fn add_gpio_map_bank1(&mut self, atom: GpioMapAtom) {
         self.gpio_map_bank1 = Some(atom);
         self.update_header();
     }
-    
+
     #[cfg(feature = "alloc")]
     pub fn add_custom_atom(&mut self, atom_type: u8, data: Vec<u8>) {
         self.custom_atoms.push((atom_type, data));
         self.update_header();
     }
-    
+
     #[cfg(not(feature = "alloc"))]
     pub fn set_custom_atoms(&mut self, atoms: &'static [(u8, &'static [u8])]) {
         self.custom_atoms = atoms;
@@ -566,7 +577,7 @@ impl Eeprom {
         data.extend_from_slice(&crc.to_le_bytes());
         data
     }
-    
+
     /// Serialize with CRC32 to provided buffer (no_std version)
     #[cfg(not(feature = "alloc"))]
     pub fn serialize_with_crc_to_slice(&self, buffer: &mut [u8]) -> Result<usize, EhatromError> {
@@ -574,7 +585,7 @@ impl Eeprom {
         if buffer.len() < data_len + 4 {
             return Err(EhatromError::BufferTooSmall);
         }
-        
+
         let mut hasher = Hasher::new();
         hasher.update(&buffer[..data_len]);
         let crc = hasher.finalize();
@@ -600,64 +611,64 @@ impl Eeprom {
         self.serialize_to_vec(&mut bytes);
         bytes
     }
-    
+
     /// Serialize EEPROM structure to buffer (no_std version)
     #[cfg(not(feature = "alloc"))]
     pub fn serialize_to_slice(&self, buffer: &mut [u8]) -> Result<usize, EhatromError> {
         let mut offset = 0;
-        
+
         // Calculate required size first
         let required_size = self.calculate_serialized_size();
         if buffer.len() < required_size {
             return Err(EhatromError::BufferTooSmall);
         }
-        
+
         self.serialize_to_buffer(buffer, &mut offset)?;
         Ok(offset)
     }
-    
+
     /// Serialize EEPROM structure to buffer (universal version)
     pub fn serialize_to_slice_universal(&self, buffer: &mut [u8]) -> Result<usize, EhatromError> {
         let mut offset = 0;
-        
-        // Calculate required size first  
+
+        // Calculate required size first
         let required_size = self.calculate_serialized_size();
         if buffer.len() < required_size {
             return Err(EhatromError::BufferTooSmall);
         }
-        
+
         self.serialize_to_buffer(buffer, &mut offset)?;
         Ok(offset)
     }
-    
+
     /// Helper method to calculate total serialized size
     pub fn calculate_serialized_size(&self) -> usize {
         let mut size = core::mem::size_of::<EepromHeader>();
         size += core::mem::size_of::<AtomHeader>() * 2; // VendorInfo + GPIO bank0
         size += core::mem::size_of::<VendorInfoAtom>();
         size += core::mem::size_of::<GpioMapAtom>();
-        
+
         if let Some(ref blob) = self.dt_blob {
             size += core::mem::size_of::<AtomHeader>() + blob.len();
         }
-        
+
         if self.gpio_map_bank1.is_some() {
             size += core::mem::size_of::<AtomHeader>() + core::mem::size_of::<GpioMapAtom>();
         }
-        
+
         #[cfg(feature = "alloc")]
         for (_atom_type, data) in &self.custom_atoms {
             size += core::mem::size_of::<AtomHeader>() + data.len();
         }
-        
+
         #[cfg(not(feature = "alloc"))]
         for (_atom_type, data) in self.custom_atoms {
             size += core::mem::size_of::<AtomHeader>() + data.len();
         }
-        
+
         size
     }
-    
+
     /// Internal method to serialize into Vec (alloc version)
     #[cfg(feature = "alloc")]
     fn serialize_to_vec(&self, bytes: &mut Vec<u8>) {
@@ -666,7 +677,7 @@ impl Eeprom {
         bytes.extend_from_slice(unsafe {
             core::slice::from_raw_parts(header_ptr, core::mem::size_of::<EepromHeader>())
         });
-        
+
         // VendorInfo
         let atom_header = AtomHeader {
             atom_type: AtomType::VendorInfo as u8,
@@ -682,7 +693,7 @@ impl Eeprom {
         bytes.extend_from_slice(unsafe {
             core::slice::from_raw_parts(vendor_ptr, core::mem::size_of::<VendorInfoAtom>())
         });
-        
+
         // GPIO bank0
         let atom_header = AtomHeader {
             atom_type: AtomType::GpioMapBank0 as u8,
@@ -698,7 +709,7 @@ impl Eeprom {
         bytes.extend_from_slice(unsafe {
             core::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>())
         });
-        
+
         // DT blob
         if let Some(ref blob) = self.dt_blob {
             let atom_header = AtomHeader {
@@ -713,7 +724,7 @@ impl Eeprom {
             });
             bytes.extend_from_slice(blob);
         }
-        
+
         // GPIO bank1
         if let Some(ref bank1) = self.gpio_map_bank1 {
             let atom_header = AtomHeader {
@@ -731,7 +742,7 @@ impl Eeprom {
                 core::slice::from_raw_parts(gpio_ptr, core::mem::size_of::<GpioMapAtom>())
             });
         }
-        
+
         // Custom atoms
         for (atom_type, data) in &self.custom_atoms {
             let atom_header = AtomHeader {
@@ -747,11 +758,19 @@ impl Eeprom {
             bytes.extend_from_slice(data);
         }
     }
-    
+
     /// Internal method to serialize into buffer (no_std version)
-    pub fn serialize_to_buffer(&self, buffer: &mut [u8], offset: &mut usize) -> Result<(), EhatromError> {
+    pub fn serialize_to_buffer(
+        &self,
+        buffer: &mut [u8],
+        offset: &mut usize,
+    ) -> Result<(), EhatromError> {
         // Helper to copy data safely
-        fn copy_to_buffer<T>(data: &T, buffer: &mut [u8], offset: &mut usize) -> Result<(), EhatromError> {
+        fn copy_to_buffer<T>(
+            data: &T,
+            buffer: &mut [u8],
+            offset: &mut usize,
+        ) -> Result<(), EhatromError> {
             let size = core::mem::size_of::<T>();
             if *offset + size > buffer.len() {
                 return Err(EhatromError::BufferTooSmall);
@@ -761,10 +780,10 @@ impl Eeprom {
             *offset += size;
             Ok(())
         }
-        
+
         // EEPROM header
         copy_to_buffer(&self.header, buffer, offset)?;
-        
+
         // VendorInfo
         let atom_header = AtomHeader {
             atom_type: AtomType::VendorInfo as u8,
@@ -774,7 +793,7 @@ impl Eeprom {
         };
         copy_to_buffer(&atom_header, buffer, offset)?;
         copy_to_buffer(&self.vendor_info, buffer, offset)?;
-        
+
         // GPIO bank0
         let atom_header = AtomHeader {
             atom_type: AtomType::GpioMapBank0 as u8,
@@ -784,7 +803,7 @@ impl Eeprom {
         };
         copy_to_buffer(&atom_header, buffer, offset)?;
         copy_to_buffer(&self.gpio_map_bank0, buffer, offset)?;
-        
+
         // DT blob
         if let Some(ref blob) = self.dt_blob {
             let atom_header = AtomHeader {
@@ -800,7 +819,7 @@ impl Eeprom {
             buffer[*offset..*offset + blob.len()].copy_from_slice(blob);
             *offset += blob.len();
         }
-        
+
         // GPIO bank1
         if let Some(ref bank1) = self.gpio_map_bank1 {
             let atom_header = AtomHeader {
@@ -812,7 +831,7 @@ impl Eeprom {
             copy_to_buffer(&atom_header, buffer, offset)?;
             copy_to_buffer(bank1, buffer, offset)?;
         }
-        
+
         // Custom atoms
         #[cfg(feature = "alloc")]
         for (atom_type, data) in &self.custom_atoms {
@@ -829,7 +848,7 @@ impl Eeprom {
             buffer[*offset..*offset + data.len()].copy_from_slice(data);
             *offset += data.len();
         }
-        
+
         #[cfg(not(feature = "alloc"))]
         for (atom_type, data) in self.custom_atoms {
             let atom_header = AtomHeader {
@@ -845,7 +864,7 @@ impl Eeprom {
             buffer[*offset..*offset + data.len()].copy_from_slice(data);
             *offset += data.len();
         }
-        
+
         Ok(())
     }
 
@@ -867,11 +886,7 @@ impl From<u8> for AtomType {
 }
 
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
-pub fn write_to_eeprom_i2c(
-    data: &[u8],
-    dev_path: &str,
-    addr: u16,
-) -> Result<(), EhatromError> {
+pub fn write_to_eeprom_i2c(data: &[u8], dev_path: &str, addr: u16) -> Result<(), EhatromError> {
     let mut dev = LinuxI2CDevice::new(dev_path, addr).map_err(|_| EhatromError::I2cError)?;
     // EEPROM HAT: use page write (16 bytes per page) with 2-byte offset
     let page_size = 16;
@@ -894,9 +909,10 @@ pub fn write_to_eeprom_i2c(
             buf[1] = (offset & 0xFF) as u8;
             let data_len = end - offset as usize;
             buf[2..2 + data_len].copy_from_slice(&data[offset as usize..end]);
-            dev.write(&buf[..2 + data_len]).map_err(|_| EhatromError::I2cError)?;
+            dev.write(&buf[..2 + data_len])
+                .map_err(|_| EhatromError::I2cError)?;
         }
-        
+
         // Sleep replacement for no_std
         #[cfg(feature = "std")]
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -904,11 +920,11 @@ pub fn write_to_eeprom_i2c(
         {
             // For bare-metal, implement busy-wait delay
             // This is platform-specific and should be replaced with proper delay
-            for _ in 0..100000 { 
-                core::hint::spin_loop(); 
+            for _ in 0..100000 {
+                core::hint::spin_loop();
             }
         }
-        
+
         offset += (end - offset as usize) as u16;
     }
     Ok(())
@@ -924,7 +940,8 @@ pub fn read_from_eeprom_i2c(
     let mut dev = LinuxI2CDevice::new(dev_path, addr).map_err(|_| EhatromError::I2cError)?;
     // Send 2-byte offset first (high byte, low byte)
     let offset_bytes = [(offset >> 8) as u8, (offset & 0xFF) as u8];
-    dev.write(&offset_bytes).map_err(|_| EhatromError::I2cError)?;
+    dev.write(&offset_bytes)
+        .map_err(|_| EhatromError::I2cError)?;
     dev.read(buf).map_err(|_| EhatromError::I2cError)?;
     Ok(())
 }
