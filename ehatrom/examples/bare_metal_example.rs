@@ -52,7 +52,7 @@ fn main() {
 
     // Calculate required buffer size
     let buffer_size = eeprom.calculate_serialized_size();
-    println!("Required buffer size: {} bytes", buffer_size);
+    println!("Required buffer size: {buffer_size} bytes");
 
     // Serialize to fixed buffer (demonstrates no heap allocation approach)
     let mut buffer = vec![0u8; 512]; // In real no_std, this would be a static array
@@ -68,13 +68,13 @@ fn main() {
     let mut offset = 0;
     match eeprom.serialize_to_buffer(&mut buffer, &mut offset) {
         Ok(()) => {
-            println!("Successfully serialized {} bytes to buffer", offset);
+            println!("Successfully serialized {offset} bytes to buffer");
             println!("First 16 bytes: {:02X?}", &buffer[..16.min(offset)]);
         }
         Err(e) => {
-            println!("Serialization failed: {:?}", e);
+            println!("Serialization failed: {e:?}");
         }
     }
 
-    println!("EEPROM structure:\n{}", eeprom);
+    println!("EEPROM structure:\n{eeprom}");
 }
