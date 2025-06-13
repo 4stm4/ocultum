@@ -128,12 +128,13 @@ See also: [update_and_run.md](./update_and_run.md) for usage automation.
 A full-featured CLI is available starting from version 0.2.0:
 
 ```
-Usage: ehatrom <read|write|show> [options]
+Usage: ehatrom <read|write|show|detect> [options]
 
 Commands:
   read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file
   write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device
   show <input.bin>                        Show parsed EEPROM info from file (debug format)
+  detect [i2c-dev]                        Auto-detect and show HAT EEPROM info (default: /dev/i2c-1)
 ```
 
 Examples:
@@ -147,6 +148,10 @@ sudo ehatrom write /dev/i2c-0 0x50 dump.bin
 
 # Show EEPROM info (debug format)
 ./ehatrom show dump.bin
+
+# Auto-detect HAT EEPROM and show info
+sudo ehatrom detect                    # Uses /dev/i2c-1 by default
+sudo ehatrom detect /dev/i2c-0        # Use specific I2C bus
 ```
 
 - All errors and usage info are printed to stderr.

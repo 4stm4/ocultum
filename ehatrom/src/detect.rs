@@ -1,4 +1,4 @@
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn detect_and_show_eeprom_info(
     dev_path: &str,
     possible_addrs: &[u16],

@@ -26,6 +26,9 @@ done
 # Detect EEPROM HAT
 if command -v i2cdetect >/dev/null 2>&1; then
   sudo i2cdetect -y 1 | grep -E "(50|UU)" || echo "EEPROM not found at 0x50"
+  # Use new detect command
+  echo "=== detect eeprom ==="
+  sudo ./target/release/ehatrom detect /dev/i2c-1
 else
   echo "i2cdetect not found, installing i2c-tools..."
   sudo apt-get update && sudo apt-get install -y i2c-tools

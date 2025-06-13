@@ -18,7 +18,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: ehatrom <read|write|show> [options]");
+        eprintln!("Usage: ehatrom <read|write|show|detect> [options]");
         process::exit(1);
     }
     match args[1].as_str() {
@@ -118,9 +118,35 @@ fn main() {
                 }
             }
         }
+        "detect" => {
+            // ehatrom detect [i2c-dev]
+            #[cfg(all(target_os = "linux", feature = "linux"))]
+            {
+                use ehatrom::detect_and_show_eeprom_info;
+                let dev = if args.len() >= 3 {
+                    &args[2]
+                } else {
+                    "/dev/i2c-1" // default
+                };
+                let possible_addrs = &[0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57];
+                let read_len = 1024; // read up to 1KB
+                match detect_and_show_eeprom_info(dev, possible_addrs, read_len) {
+                    Ok(()) => {}
+                    Err(e) => {
+                        eprintln!("Detection error: {e}");
+                        process::exit(1);
+                    }
+                }
+            }
+            #[cfg(not(all(target_os = "linux", feature = "linux")))]
+            {
+                eprintln!("EEPROM detection is only supported on Linux with --features=linux");
+                process::exit(1);
+            }
+        }
         _ => {
             eprintln!("Unknown command: {}", args[1]);
-            eprintln!("Usage: ehatrom <read|write|show> [options]");
+            eprintln!("Usage: ehatrom <read|write|show|detect> [options]");
             process::exit(1);
         }
     }

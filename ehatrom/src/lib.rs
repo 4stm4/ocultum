@@ -16,7 +16,7 @@ use core::fmt;
 pub mod utils;
 use utils::crc32::Hasher;
 
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 use i2cdev::{core::I2CDevice, linux::LinuxI2CDevice};
 
 /// EEPROM header structure for Raspberry Pi
@@ -481,7 +481,7 @@ impl From<u8> for AtomType {
     }
 }
 
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn write_to_eeprom_i2c(
     data: &[u8],
     dev_path: &str,
@@ -504,7 +504,7 @@ pub fn write_to_eeprom_i2c(
     Ok(())
 }
 
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn read_from_eeprom_i2c(
     buf: &mut [u8],
     dev_path: &str,
@@ -519,9 +519,9 @@ pub fn read_from_eeprom_i2c(
     Ok(())
 }
 
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub mod detect;
-#[cfg(feature = "linux")]
+#[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub use detect::detect_and_show_eeprom_info;
 
 impl VendorInfoAtom {

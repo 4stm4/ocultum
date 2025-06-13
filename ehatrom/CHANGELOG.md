@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.0] — 2025-06-13
 - **BREAKING**: Removed all serde dependencies (serde, serde_json, serde_yaml, serde-xml-rs)
-- **BREAKING**: Removed JSON/YAML/XML CLI commands, kept only `read`, `write`, `show` 
+- **BREAKING**: Removed JSON/YAML/XML CLI commands, kept only `read`, `write`, `show`, `detect`
+- **NEW**: `detect` command for auto-detecting HAT EEPROM on I2C bus
 - **NEW**: Custom CRC32 implementation - no external dependencies for CRC32
 - **NEW**: Reorganized project structure - all tests in `tests/`, examples in `examples/`
 - **NEW**: Enhanced update_and_run.sh script with examples demonstration
@@ -12,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - **IMPROVED**: Better error handling and CLI user experience
 - **IMPROVED**: Bare-metal compatibility - minimal dependencies
 - **IMPROVED**: Comprehensive documentation with usage examples
+- **IMPROVED**: ARM/ARM64 support with performance optimizations for low-power devices
 - **FIXED**: All clippy warnings and formatting issues
 - **FIXED**: I2C function import issues with proper feature gating
 - Documentation: Updated README, CLI usage examples, Russian comments → English
