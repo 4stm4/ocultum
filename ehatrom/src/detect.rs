@@ -11,12 +11,24 @@
 //! - [Documentation (docs.rs)](https://docs.rs/ehatrom)
 //! - [GitHub](https://github.com/4stm4/ocultum/tree/main/ehatrom)
 
+// Import necessary types based on features
+#[cfg(feature = "alloc")]
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+
+#[cfg(feature = "std")]
+use std::{print, println};
+
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn detect_and_show_eeprom_info(
     dev_path: &str,
     possible_addrs: &[u16],
     read_len: usize,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), crate::EhatromError> {
     use crate::{Eeprom, read_from_eeprom_i2c};
 
     println!("Scanning I2C bus {} for HAT EEPROM...", dev_path);
@@ -61,7 +73,9 @@ pub fn detect_and_show_eeprom_info(
 
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn find_i2c_devices() -> Vec<String> {
+    #[cfg(feature = "std")]
     use std::fs;
+    #[cfg(feature = "std")]
     use std::path::Path;
 
     let mut devices = Vec::new();
@@ -102,7 +116,7 @@ pub fn find_i2c_devices() -> Vec<String> {
 }
 
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
-pub fn detect_all_i2c_devices() -> Result<(), Box<dyn std::error::Error>> {
+pub fn detect_all_i2c_devices() -> Result<(), crate::EhatromError> {
     let devices = find_i2c_devices();
 
     if devices.is_empty() {
@@ -150,9 +164,14 @@ pub fn find_i2c_devices() -> Vec<String> {
 }
 
 #[cfg(not(all(feature = "linux", any(target_os = "linux", target_os = "android"))))]
-pub fn detect_all_i2c_devices() -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("I2C device detection is only supported on Linux with --features=linux");
-    std::process::exit(1);
+pub fn detect_all_i2c_devices() -> Result<(), crate::EhatromError> {
+    #[cfg(feature = "std")]
+    {
+        eprintln!("I2C device detection is only supported on Linux with --features=linux");
+        std::process::exit(1);
+    }
+    #[cfg(not(feature = "std"))]
+    Err(crate::EhatromError::I2cError)
 }
 
 #[cfg(not(all(feature = "linux", any(target_os = "linux", target_os = "android"))))]
@@ -160,7 +179,12 @@ pub fn detect_and_show_eeprom_info(
     _dev_path: &str,
     _possible_addrs: &[u16],
     _read_len: usize,
-) -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("EEPROM detection is only supported on Linux with --features=linux");
-    std::process::exit(1);
+) -> Result<(), crate::EhatromError> {
+    #[cfg(feature = "std")]
+    {
+        eprintln!("EEPROM detection is only supported on Linux with --features=linux");
+        std::process::exit(1);
+    }
+    #[cfg(not(feature = "std"))]
+    Err(crate::EhatromError::I2cError)
 }
