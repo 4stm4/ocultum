@@ -83,6 +83,11 @@ sudo ./target/release/ehatrom read /dev/i2c-1 0x50 backup.bin
 
 # Write EEPROM to HAT (CAUTION!)
 sudo ./target/release/ehatrom write /dev/i2c-1 0x50 new_eeprom.bin
+
+# Auto-detect HAT EEPROM (NEW!)
+sudo ./target/release/ehatrom detect                    # Standard I2C bus (/dev/i2c-0)
+sudo ./target/release/ehatrom detect /dev/i2c-1         # Specific I2C bus
+sudo ./target/release/ehatrom detect --all              # Scan ALL I2C devices automatically
 ```
 
 ### Creating custom EEPROM files:
@@ -151,4 +156,6 @@ The `ehatrom` library provides:
 - **Full HAT specification support** including all standard atom types
 - **Extensible architecture** for custom atom types
 - **Cross-platform development** (build on any OS, deploy on Linux)
-- **Comprehensive testing** (16 test cases covering all functionality)
+- **Comprehensive testing** (17 test cases covering all functionality)
+- **Advanced I2C device discovery** (automatic scanning of all I2C buses)
+- **Smart HAT detection** (R-Pi signature verification and comprehensive error reporting)

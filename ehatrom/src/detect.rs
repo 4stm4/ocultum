@@ -5,10 +5,10 @@ pub fn detect_and_show_eeprom_info(
     read_len: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::{Eeprom, read_from_eeprom_i2c};
-    
+
     println!("Scanning I2C bus {} for HAT EEPROM...", dev_path);
     println!("Checking addresses: {:02X?}", possible_addrs);
-    
+
     for &addr in possible_addrs {
         print!("Trying 0x{:02X}... ", addr);
         let mut buf = vec![0u8; read_len];
@@ -27,7 +27,10 @@ pub fn detect_and_show_eeprom_info(
                         Err(e) => {
                             println!("EEPROM found at 0x{:02X} but failed to parse: {}", addr, e);
                             // Show more bytes for debugging
-                            println!("Raw data (first 64 bytes): {:02X?}", &buf[0..64.min(buf.len())]);
+                            println!(
+                                "Raw data (first 64 bytes): {:02X?}",
+                                &buf[0..64.min(buf.len())]
+                            );
                         }
                     }
                 } else {
@@ -47,9 +50,9 @@ pub fn detect_and_show_eeprom_info(
 pub fn find_i2c_devices() -> Vec<String> {
     use std::fs;
     use std::path::Path;
-    
+
     let mut devices = Vec::new();
-    
+
     // Scan /dev for i2c-* devices
     if let Ok(entries) = fs::read_dir("/dev") {
         for entry in entries.flatten() {
@@ -64,34 +67,44 @@ pub fn find_i2c_devices() -> Vec<String> {
             }
         }
     }
-    
+
     // Sort devices by number for consistent output
     devices.sort_by(|a, b| {
-        let num_a = a.split('-').last().unwrap_or("0").parse::<u32>().unwrap_or(0);
-        let num_b = b.split('-').last().unwrap_or("0").parse::<u32>().unwrap_or(0);
+        let num_a = a
+            .split('-')
+            .last()
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0);
+        let num_b = b
+            .split('-')
+            .last()
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0);
         num_a.cmp(&num_b)
     });
-    
+
     devices
 }
 
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub fn detect_all_i2c_devices() -> Result<(), Box<dyn std::error::Error>> {
     let devices = find_i2c_devices();
-    
+
     if devices.is_empty() {
         println!("No I2C devices found in /dev");
         println!("Make sure I2C is enabled and you have proper permissions.");
         return Ok(());
     }
-    
+
     println!("Found {} I2C device(s): {:?}", devices.len(), devices);
     println!();
-    
+
     let possible_addrs = [0x50]; // HAT EEPROM standard address
     let read_len = 256;
     let mut found_any = false;
-    
+
     for device in &devices {
         println!("=== Scanning {} ===", device);
         match detect_and_show_eeprom_info(device, &possible_addrs, read_len) {
@@ -105,7 +118,7 @@ pub fn detect_all_i2c_devices() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     if !found_any {
         println!("No HAT EEPROM found on any I2C device.");
         println!("This could mean:");
@@ -114,7 +127,7 @@ pub fn detect_all_i2c_devices() -> Result<(), Box<dyn std::error::Error>> {
         println!("  • HAT uses a different I2C address");
         println!("  • Permissions issue (try running with sudo)");
     }
-    
+
     Ok(())
 }
 

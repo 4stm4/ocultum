@@ -23,7 +23,9 @@ fn main() {
         eprintln!("  read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file");
         eprintln!("  write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device");
         eprintln!("  show <input.bin>                        Show parsed EEPROM info from file");
-        eprintln!("  detect [i2c-dev]                        Auto-detect HAT EEPROM on specific device");
+        eprintln!(
+            "  detect [i2c-dev]                        Auto-detect HAT EEPROM on specific device"
+        );
         eprintln!("  detect --all                            Scan all I2C devices for HAT EEPROM");
         eprintln!("Examples:");
         eprintln!("  sudo ehatrom detect                     # Scan /dev/i2c-0 (HAT standard)");
@@ -132,8 +134,8 @@ fn main() {
             // ehatrom detect [i2c-dev] or ehatrom detect --all
             #[cfg(all(target_os = "linux", feature = "linux"))]
             {
-                use ehatrom::{detect_and_show_eeprom_info, detect_all_i2c_devices};
-                
+                use ehatrom::{detect_all_i2c_devices, detect_and_show_eeprom_info};
+
                 if args.len() >= 3 && args[2] == "--all" {
                     // Scan all I2C devices
                     match detect_all_i2c_devices() {

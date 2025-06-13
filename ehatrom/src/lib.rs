@@ -522,7 +522,7 @@ pub fn read_from_eeprom_i2c(
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
 pub mod detect;
 #[cfg(all(feature = "linux", any(target_os = "linux", target_os = "android")))]
-pub use detect::{detect_and_show_eeprom_info, detect_all_i2c_devices, find_i2c_devices};
+pub use detect::{detect_all_i2c_devices, detect_and_show_eeprom_info, find_i2c_devices};
 
 impl VendorInfoAtom {
     /// Creates VendorInfoAtom from strings (automatically trims/pads with zeros)
