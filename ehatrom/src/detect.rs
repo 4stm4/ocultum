@@ -14,7 +14,6 @@
 // Import necessary types based on features
 #[cfg(feature = "alloc")]
 use alloc::{
-    boxed::Box,
     string::{String, ToString},
     vec,
     vec::Vec,
@@ -75,8 +74,6 @@ pub fn detect_and_show_eeprom_info(
 pub fn find_i2c_devices() -> Vec<String> {
     #[cfg(feature = "std")]
     use std::fs;
-    #[cfg(feature = "std")]
-    use std::path::Path;
 
     let mut devices = Vec::new();
 

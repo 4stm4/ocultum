@@ -37,6 +37,12 @@ fn main() {
 
     // Serialize with CRC
     let serialized = eeprom.serialize_with_crc();
+
+    // Create output directory if it doesn't exist
+    if std::fs::metadata("tests/data").is_err() {
+        std::fs::create_dir_all("tests/data").expect("Failed to create tests/data directory");
+    }
+
     std::fs::write("tests/data/simple.bin", &serialized).expect("Failed to write test file");
 
     println!(

@@ -83,6 +83,12 @@ fn main() {
     // Serialize with CRC
     let serialized = eeprom.serialize_with_crc();
     let filename = "tests/data/advanced.bin";
+
+    // Create output directory if it doesn't exist
+    if std::fs::metadata("tests/data").is_err() {
+        std::fs::create_dir_all("tests/data").expect("Failed to create tests/data directory");
+    }
+
     std::fs::write(filename, &serialized).expect("Failed to write advanced EEPROM file");
 
     println!("✅ Created {} ({} bytes)", filename, serialized.len());
