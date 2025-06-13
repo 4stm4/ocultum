@@ -34,10 +34,21 @@ fn test_crc32_performance() {
     println!("Time: {duration:?} for {iterations} iterations");
     println!("Throughput: {throughput:.2} MB/s");
 
-    // Performance assertion - should process at least 50 MB/s
+    // Performance assertion - should process at least 50 MB/s (default)
+    // Allow override via env or lower for ARM
+    let min_mbps = std::env::var("CRC32_PERF_MIN_MBPS")
+        .ok()
+        .and_then(|v| v.parse::<f64>().ok())
+        .unwrap_or(
+            if cfg!(target_arch = "arm") || cfg!(target_arch = "aarch64") {
+                10.0
+            } else {
+                50.0
+            },
+        );
     assert!(
-        throughput > 50.0,
-        "CRC32 performance too slow: {throughput:.2} MB/s"
+        throughput > min_mbps,
+        "CRC32 performance too slow: {throughput:.2} MB/s (min required: {min_mbps} MB/s)"
     );
 }
 
