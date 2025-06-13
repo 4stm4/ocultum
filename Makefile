@@ -9,3 +9,9 @@ ehatrom_ci:
 		bash -c "cargo +nightly clippy --workspace --all-targets -- -D warnings && \
 		         cargo build --workspace --all-targets --verbose && \
 		         cargo test --workspace --all-targets --verbose"
+
+ehatrom_ci_local:
+	cd ehatrom && \
+	cargo clippy --workspace --all-targets -- -D warnings && \
+	cargo build --workspace --all-targets --verbose && \
+	cargo test --workspace --all-targets --verbose

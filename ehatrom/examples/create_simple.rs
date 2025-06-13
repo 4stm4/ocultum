@@ -37,10 +37,10 @@ fn main() {
 
     // Serialize with CRC
     let serialized = eeprom.serialize_with_crc();
-    std::fs::write("tests/data/simple.eep", &serialized).expect("Failed to write test file");
+    std::fs::write("tests/data/simple.bin", &serialized).expect("Failed to write test file");
 
     println!(
-        "✅ Created tests/data/simple.eep ({} bytes)",
+        "✅ Created tests/data/simple.bin ({} bytes)",
         serialized.len()
     );
     println!("📊 Minimal EEPROM structure:");

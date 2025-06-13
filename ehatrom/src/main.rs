@@ -19,6 +19,16 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: ehatrom <read|write|show|detect> [options]");
+        eprintln!("Commands:");
+        eprintln!("  read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file");
+        eprintln!("  write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device");
+        eprintln!("  show <input.bin>                        Show parsed EEPROM info from file");
+        eprintln!("  detect [i2c-dev]                        Auto-detect HAT EEPROM on specific device");
+        eprintln!("  detect --all                            Scan all I2C devices for HAT EEPROM");
+        eprintln!("Examples:");
+        eprintln!("  sudo ehatrom detect                     # Scan /dev/i2c-0 (HAT standard)");
+        eprintln!("  sudo ehatrom detect --all               # Scan all I2C devices");
+        eprintln!("  sudo ehatrom detect /dev/i2c-1          # Scan specific device");
         process::exit(1);
     }
     match args[1].as_str() {
@@ -119,22 +129,35 @@ fn main() {
             }
         }
         "detect" => {
-            // ehatrom detect [i2c-dev]
+            // ehatrom detect [i2c-dev] or ehatrom detect --all
             #[cfg(all(target_os = "linux", feature = "linux"))]
             {
-                use ehatrom::detect_and_show_eeprom_info;
-                let dev = if args.len() >= 3 {
-                    &args[2]
+                use ehatrom::{detect_and_show_eeprom_info, detect_all_i2c_devices};
+                
+                if args.len() >= 3 && args[2] == "--all" {
+                    // Scan all I2C devices
+                    match detect_all_i2c_devices() {
+                        Ok(()) => {}
+                        Err(e) => {
+                            eprintln!("Detection error: {e}");
+                            process::exit(1);
+                        }
+                    }
                 } else {
-                    "/dev/i2c-1" // default
-                };
-                let possible_addrs = &[0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57];
-                let read_len = 1024; // read up to 1KB
-                match detect_and_show_eeprom_info(dev, possible_addrs, read_len) {
-                    Ok(()) => {}
-                    Err(e) => {
-                        eprintln!("Detection error: {e}");
-                        process::exit(1);
+                    // Scan specific device or default
+                    let dev = if args.len() >= 3 {
+                        &args[2]
+                    } else {
+                        "/dev/i2c-0" // HAT EEPROM is typically on i2c-0
+                    };
+                    let possible_addrs = &[0x50]; // HAT EEPROM is always at 0x50
+                    let read_len = 1024; // read up to 1KB
+                    match detect_and_show_eeprom_info(dev, possible_addrs, read_len) {
+                        Ok(()) => {}
+                        Err(e) => {
+                            eprintln!("Detection error: {e}");
+                            process::exit(1);
+                        }
                     }
                 }
             }

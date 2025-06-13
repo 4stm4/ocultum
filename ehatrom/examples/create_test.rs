@@ -35,9 +35,9 @@ fn main() {
 
     // Serialize with CRC
     let serialized = eeprom.serialize_with_crc();
-    std::fs::write("tests/data/test.eep", &serialized).expect("Failed to write test file");
+    std::fs::write("tests/data/test.bin", &serialized).expect("Failed to write test file");
 
-    println!("Created tests/data/test.eep ({} bytes)", serialized.len());
+    println!("Created tests/data/test.bin ({} bytes)", serialized.len());
 
     // Verify the created file
     if Eeprom::verify_crc(&serialized) {

@@ -134,7 +134,8 @@ Commands:
   read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file
   write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device
   show <input.bin>                        Show parsed EEPROM info from file (debug format)
-  detect [i2c-dev]                        Auto-detect and show HAT EEPROM info (default: /dev/i2c-1)
+  detect [i2c-dev]                        Auto-detect HAT EEPROM on specific device (default: /dev/i2c-0)
+  detect --all                            Scan all available I2C devices for HAT EEPROM
 ```
 
 Examples:
@@ -150,8 +151,18 @@ sudo ehatrom write /dev/i2c-0 0x50 dump.bin
 ./ehatrom show dump.bin
 
 # Auto-detect HAT EEPROM and show info
-sudo ehatrom detect                    # Uses /dev/i2c-1 by default
-sudo ehatrom detect /dev/i2c-0        # Use specific I2C bus
+sudo ehatrom detect                    # Uses /dev/i2c-0 by default (HAT EEPROM standard)
+sudo ehatrom detect /dev/i2c-1        # Use specific I2C bus if needed
+sudo ehatrom detect --all             # Scan all I2C devices automatically
+```
+
+### Advanced Detection Features
+
+The `detect --all` command automatically finds all available I2C devices in `/dev` (like `/dev/i2c-0`, `/dev/i2c-1`, etc.) and scans each one for HAT EEPROM. This is especially useful when you're not sure which I2C bus your HAT is connected to:
+
+```sh
+# Scan all I2C devices - shows which devices are available and which contain HAT EEPROM
+sudo ehatrom detect --all
 ```
 
 - All errors and usage info are printed to stderr.

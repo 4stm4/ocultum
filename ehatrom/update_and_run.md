@@ -57,10 +57,10 @@ The script performs the following sequence of operations with HAT EEPROM:
 ## Created Files
 
 - `eeprom_backup_YYYYMMDD_HHMMSS.bin` - backup of original EEPROM
-- `tests/data/simple.eep` - simple test EEPROM file
-- `tests/data/test.eep` - full test EEPROM file with vendor info
-- `tests/data/advanced.eep` - advanced EEPROM with Device Tree blob
-- `tests/data/custom_atoms.eep` - EEPROM with custom atoms
+- `tests/data/simple.bin` - simple test EEPROM file
+- `tests/data/test.bin` - full test EEPROM file with vendor info
+- `tests/data/advanced.bin` - advanced EEPROM with Device Tree blob
+- `tests/data/custom_atoms.bin` - EEPROM with custom atoms
 
 ## Troubleshooting
 

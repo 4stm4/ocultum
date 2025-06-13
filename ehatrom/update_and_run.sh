@@ -15,7 +15,7 @@ cargo run --example create_advanced
 cargo run --example create_custom_atoms
 
 # Show created files
-for f in tests/data/simple.eep tests/data/test.eep tests/data/advanced.eep tests/data/custom_atoms.eep; do
+for f in tests/data/simple.bin tests/data/test.bin tests/data/advanced.bin tests/data/custom_atoms.bin; do
   if [ -f "$f" ]; then
     ./target/release/ehatrom show "$f"
   else
@@ -25,20 +25,22 @@ done
 
 # Detect EEPROM HAT
 if command -v i2cdetect >/dev/null 2>&1; then
-  sudo i2cdetect -y 1 | grep -E "(50|UU)" || echo "EEPROM not found at 0x50"
-  # Use new detect command
+  echo "Scanning I2C buses for HAT EEPROM..."
+  sudo i2cdetect -y 0 | grep -E "(50|UU)" && echo "Found EEPROM at 0x50 on i2c-0"
+  sudo i2cdetect -y 1 | grep -E "(50|UU)" && echo "Found EEPROM at 0x50 on i2c-1"
+  # Use new detect command (tries i2c-0 first, then i2c-1 if specified)
   echo "=== detect eeprom ==="
-  sudo ./target/release/ehatrom detect /dev/i2c-1
+  sudo ./target/release/ehatrom detect /dev/i2c-0 || sudo ./target/release/ehatrom detect /dev/i2c-1
 else
   echo "i2cdetect not found, installing i2c-tools..."
   sudo apt-get update && sudo apt-get install -y i2c-tools
 fi
 
 # Work with real EEPROM
-I2C_DEVICE="/dev/i2c-1"
+I2C_DEVICE="/dev/i2c-0"  # HAT EEPROM is typically on i2c-0
 EEPROM_ADDR="0x50"
 BACKUP_FILE="eeprom_backup_$(date +%Y%m%d_%H%M%S).bin"
-TEST_FILE="tests/data/test.eep"
+TEST_FILE="tests/data/test.bin"
 
 if sudo ./target/release/ehatrom read "$I2C_DEVICE" "$EEPROM_ADDR" "$BACKUP_FILE" 2>/dev/null; then
   echo "EEPROM backup saved: $BACKUP_FILE"

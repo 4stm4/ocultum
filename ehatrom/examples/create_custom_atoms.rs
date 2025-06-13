@@ -68,7 +68,7 @@ fn main() {
 
     // Serialize with CRC
     let serialized = eeprom.serialize_with_crc();
-    let filename = "tests/data/custom_atoms.eep";
+    let filename = "tests/data/custom_atoms.bin";
     std::fs::write(filename, &serialized).expect("Failed to write custom atoms EEPROM file");
 
     println!("✅ Created {} ({} bytes)", filename, serialized.len());
