@@ -12,8 +12,8 @@ fn main() {
         "Custom Systems",
         "Multi-Atom HAT",
         [
-            0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18, 
-            0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F, 0x90,
+            0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18, 0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E,
+            0x8F, 0x90,
         ],
     );
 
@@ -38,10 +38,12 @@ fn main() {
     custom_atoms.push((0x82, calibration_data)); // Using tuple format (type, data)
 
     // Custom atom 3: Hardware version info
-    let hw_info = format!("HW_VERSION={}.{}.{},PCB_REV=C,ASSEMBLY_DATE=2024-12-20", 
-                         env!("CARGO_PKG_VERSION_MAJOR"),
-                         env!("CARGO_PKG_VERSION_MINOR"), 
-                         env!("CARGO_PKG_VERSION_PATCH"));
+    let hw_info = format!(
+        "HW_VERSION={}.{}.{},PCB_REV=C,ASSEMBLY_DATE=2024-12-20",
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        env!("CARGO_PKG_VERSION_MINOR"),
+        env!("CARGO_PKG_VERSION_PATCH")
+    );
     custom_atoms.push((0x83, hw_info.into_bytes())); // Using tuple format (type, data)
 
     // Custom atom 4: Binary data (e.g., lookup table)
@@ -87,6 +89,6 @@ fn main() {
         println!("❌ CRC32 verification failed");
     }
 
-    println!("🎯 Use './target/release/ehatrom show {}' to analyze the created EEPROM", filename);
+    println!("🎯 Use './target/release/ehatrom show {filename}' to analyze the created EEPROM");
     println!("💡 This demonstrates how to embed custom application-specific data in HAT EEPROM");
 }

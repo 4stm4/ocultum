@@ -13,22 +13,22 @@ fn main() {
         "Advanced HAT Demo",
         [
             // UUID for this specific HAT
-            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 
-            0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54,
+            0x32, 0x10,
         ],
     );
 
     // Create GPIO map for bank 0 with specific pin configurations
     let mut gpio_pins = [0u8; 28];
-    
+
     // Configure some pins as outputs (value 1)
     gpio_pins[18] = 1; // GPIO 18 as output
     gpio_pins[19] = 1; // GPIO 19 as output
     gpio_pins[20] = 1; // GPIO 20 as output
     gpio_pins[21] = 1; // GPIO 21 as output
-    
+
     // Other pins remain as inputs (value 0)
-    
+
     let gpio_atom = GpioMapAtom {
         flags: 0x0001, // Set some flags
         pins: gpio_pins,
@@ -64,7 +64,8 @@ fn main() {
             };
         };
     };
-};".to_vec();
+};"
+    .to_vec();
 
     // Create EEPROM structure with all components
     let mut eeprom = Eeprom {
@@ -72,7 +73,7 @@ fn main() {
         vendor_info: vendor_atom,
         gpio_map_bank0: gpio_atom,
         dt_blob: Some(dt_blob_data), // dt_blob is Option<Vec<u8>>
-        gpio_map_bank1: None, // Not used in this example
+        gpio_map_bank1: None,        // Not used in this example
         custom_atoms: Vec::new(),
     };
 
@@ -87,9 +88,24 @@ fn main() {
     println!("✅ Created {} ({} bytes)", filename, serialized.len());
     println!("📊 EEPROM structure:");
     println!("   • Header: 12 bytes");
-    println!("   • Vendor Info: {} bytes", std::mem::size_of::<VendorInfoAtom>() + "4STM4 Ocultum".len() + "Advanced HAT Demo".len());
-    println!("   • GPIO Map Bank 0: {} bytes", std::mem::size_of::<GpioMapAtom>());
-    println!("   • Device Tree Blob: {} bytes", serialized.len() - 12 - std::mem::size_of::<VendorInfoAtom>() - "4STM4 Ocultum".len() - "Advanced HAT Demo".len() - std::mem::size_of::<GpioMapAtom>() - 4);
+    println!(
+        "   • Vendor Info: {} bytes",
+        std::mem::size_of::<VendorInfoAtom>() + "4STM4 Ocultum".len() + "Advanced HAT Demo".len()
+    );
+    println!(
+        "   • GPIO Map Bank 0: {} bytes",
+        std::mem::size_of::<GpioMapAtom>()
+    );
+    println!(
+        "   • Device Tree Blob: {} bytes",
+        serialized.len()
+            - 12
+            - std::mem::size_of::<VendorInfoAtom>()
+            - "4STM4 Ocultum".len()
+            - "Advanced HAT Demo".len()
+            - std::mem::size_of::<GpioMapAtom>()
+            - 4
+    );
     println!("   • CRC32: 4 bytes");
 
     // Verify the created file
@@ -99,5 +115,5 @@ fn main() {
         println!("❌ CRC32 verification failed");
     }
 
-    println!("🎯 Use './target/release/ehatrom show {}' to analyze the created EEPROM", filename);
+    println!("🎯 Use './target/release/ehatrom show {filename}' to analyze the created EEPROM");
 }
