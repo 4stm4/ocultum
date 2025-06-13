@@ -20,14 +20,24 @@ fn main() {
     if args.len() < 2 {
         eprintln!("Usage: ehatrom <read|write|show|detect> [options]");
         eprintln!("Commands:");
-        eprintln!("  read <i2c-dev> <address> <output.bin>   Read EEPROM via I2C and save to file");
-        eprintln!("  write <i2c-dev> <address> <input.bin>   Write EEPROM from file to I2C device");
+        eprintln!(
+            "  read [i2c-dev] <output.bin>             Read HAT EEPROM via I2C and save to file"
+        );
+        eprintln!(
+            "  write [i2c-dev] <input.bin>             Write HAT EEPROM from file to I2C device"
+        );
         eprintln!("  show <input.bin>                        Show parsed EEPROM info from file");
         eprintln!(
             "  detect [i2c-dev]                        Auto-detect HAT EEPROM on specific device"
         );
         eprintln!("  detect --all                            Scan all I2C devices for HAT EEPROM");
+        eprintln!("Notes:");
+        eprintln!("  HAT EEPROM always uses address 0x50 (automatic)");
+        eprintln!("  Default I2C device is /dev/i2c-0 (HAT standard)");
         eprintln!("Examples:");
+        eprintln!("  sudo ehatrom read hat_data.bin          # Read from /dev/i2c-0 to file");
+        eprintln!("  sudo ehatrom write hat_data.bin         # Write from file to /dev/i2c-0");
+        eprintln!("  sudo ehatrom read /dev/i2c-1 hat.bin    # Read from specific I2C device");
         eprintln!("  sudo ehatrom detect                     # Scan /dev/i2c-0 (HAT standard)");
         eprintln!("  sudo ehatrom detect --all               # Scan all I2C devices");
         eprintln!("  sudo ehatrom detect /dev/i2c-1          # Scan specific device");
@@ -35,28 +45,35 @@ fn main() {
     }
     match args[1].as_str() {
         "read" => {
-            // ehatrom read <i2c-dev> <address> <output.bin>
-            if args.len() != 5 {
-                eprintln!("Usage: ehatrom read <i2c-dev> <address> <output.bin>");
+            // ehatrom read [i2c-dev] <output.bin>
+            if args.len() < 3 || args.len() > 4 {
+                eprintln!("Usage: ehatrom read [i2c-dev] <output.bin>");
+                eprintln!("  Default I2C device: /dev/i2c-0");
+                eprintln!("  HAT EEPROM address: 0x50 (automatic)");
                 process::exit(1);
             }
             #[cfg(all(target_os = "linux", feature = "linux"))]
             {
-                let dev = &args[2];
-                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
-                    .unwrap_or_else(|_| {
-                        eprintln!("Invalid address: {}", args[3]);
-                        process::exit(1);
-                    });
+                let (dev, output_file) = if args.len() == 3 {
+                    // ehatrom read <output.bin>
+                    ("/dev/i2c-0", &args[2])
+                } else {
+                    // ehatrom read <i2c-dev> <output.bin>
+                    (args[2].as_str(), &args[3])
+                };
+                let addr = 0x50u16; // HAT EEPROM fixed address
                 let buf = vec![0u8; 256];
                 let mut buf = buf; // for compatibility with function signature
                 match read_from_eeprom_i2c(&mut buf, dev, addr, 0) {
                     Ok(()) => {
-                        if let Err(e) = std::fs::write(&args[4], &buf) {
+                        if let Err(e) = std::fs::write(output_file, &buf) {
                             eprintln!("Failed to write output: {e}");
                             process::exit(1);
                         }
-                        println!("EEPROM read and saved to {}", args[4]);
+                        println!(
+                            "HAT EEPROM read from {} (0x50) and saved to {}",
+                            dev, output_file
+                        );
                     }
                     Err(e) => {
                         eprintln!("Read error: {e}");
@@ -72,20 +89,24 @@ fn main() {
             }
         }
         "write" => {
-            // ehatrom write <i2c-dev> <address> <input.bin>
-            if args.len() != 5 {
-                eprintln!("Usage: ehatrom write <i2c-dev> <address> <input.bin>");
+            // ehatrom write [i2c-dev] <input.bin>
+            if args.len() < 3 || args.len() > 4 {
+                eprintln!("Usage: ehatrom write [i2c-dev] <input.bin>");
+                eprintln!("  Default I2C device: /dev/i2c-0");
+                eprintln!("  HAT EEPROM address: 0x50 (automatic)");
                 process::exit(1);
             }
             #[cfg(all(target_os = "linux", feature = "linux"))]
             {
-                let dev = &args[2];
-                let addr = u16::from_str_radix(args[3].trim_start_matches("0x"), 16)
-                    .unwrap_or_else(|_| {
-                        eprintln!("Invalid address: {}", args[3]);
-                        process::exit(1);
-                    });
-                let data = match std::fs::read(&args[4]) {
+                let (dev, input_file) = if args.len() == 3 {
+                    // ehatrom write <input.bin>
+                    ("/dev/i2c-0", &args[2])
+                } else {
+                    // ehatrom write <i2c-dev> <input.bin>
+                    (args[2].as_str(), &args[3])
+                };
+                let addr = 0x50u16; // HAT EEPROM fixed address
+                let data = match std::fs::read(input_file) {
                     Ok(d) => d,
                     Err(e) => {
                         eprintln!("Failed to read input: {e}");
@@ -94,7 +115,7 @@ fn main() {
                 };
                 match write_to_eeprom_i2c(&data, dev, addr) {
                     Ok(()) => {
-                        println!("EEPROM written from {}", args[4]);
+                        println!("HAT EEPROM written from {} to {} (0x50)", input_file, dev);
                     }
                     Err(e) => {
                         eprintln!("Write error: {e}");

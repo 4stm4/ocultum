@@ -9,9 +9,15 @@ All notable changes to this project will be documented in this file.
   - Static data support for embedded systems (`from_bytes_no_alloc`, `set_custom_atoms`)
   - Custom `EhatromError` type for better no_std error handling
 - **BREAKING**: I2C functions now return `EhatromError` instead of `Box<dyn std::error::Error>`
+- **BREAKING**: **Simplified CLI Interface** - Commands now automatically use HAT EEPROM address (0x50)
+  - `read [i2c-dev] <output.bin>` - No longer requires manual address specification
+  - `write [i2c-dev] <input.bin>` - No longer requires manual address specification
+  - Default I2C device: `/dev/i2c-0` (HAT standard)
+  - **Old**: `sudo ehatrom read /dev/i2c-0 0x50 output.bin`
+  - **New**: `sudo ehatrom read output.bin` (uses defaults) or `sudo ehatrom read /dev/i2c-1 output.bin`
 - **NEW**: Bare-metal example (`examples/bare_metal_example.rs`)
 - **IMPROVED**: Cross-platform compatibility with proper `#[cfg]` attributes
-- **IMPROVED**: Enhanced CLI with Linux feature detection
+- **IMPROVED**: Enhanced CLI with Linux feature detection and better help messages
 - **Feature Flags**: 
   - `default = ["alloc"]` - Standard usage with heap allocation
   - `alloc` - Enable Vec/String types (requires alloc crate)
