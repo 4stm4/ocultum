@@ -12,7 +12,8 @@ fi
 
 # Variables
 TARGET="armv7-unknown-linux-gnueabihf"
-BINARY_NAME="minimal"
+# Name of the resulting binary matches the package name
+BINARY_NAME="ocultum"
 
 # Build the project
 cargo build --release --target $TARGET
