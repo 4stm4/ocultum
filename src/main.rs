@@ -1,19 +1,26 @@
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
 use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
-use std::thread;
 
 // Добавляю недостающие импорты
 use embedded_graphics::mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder};
 use embedded_graphics::text::{Baseline, Text};
 
+#[cfg(target_os = "none")]
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
     let mock_i2c = MockI2C;
     init_oled(mock_i2c);
 
     loop {
-        thread::sleep(std::time::Duration::from_secs(1));
+        embedded_hal::delay::DelayMs::delay_ms(&mut (), 1000u32);
     }
+}
+
+#[cfg(not(target_os = "none"))]
+fn main() {
+    println!("Linux mode initialized");
+    let mock_i2c = MockI2C;
+    init_oled(mock_i2c);
 }
 
 fn init_oled<I2C>(i2c: I2C)
@@ -36,12 +43,6 @@ where
         .unwrap();
 
     disp.flush().unwrap();
-}
-
-fn main() {
-    println!("Linux mode initialized");
-    let mock_i2c = MockI2C;
-    init_oled(mock_i2c);
 }
 
 // Заглушка для объекта I2C
