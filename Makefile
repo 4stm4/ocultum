@@ -17,6 +17,7 @@ ehatrom_ci_local:
 	cargo test --workspace --all-targets --verbose
 
 ocultum_ci_local:
+	cargo +nightly fmt -- --check && \
 	cargo clippy --workspace --all-targets -- -D warnings && \
 	cargo build --workspace --all-targets --verbose && \
 	cargo test --workspace --all-targets --verbose

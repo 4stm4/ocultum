@@ -1,16 +1,19 @@
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
 use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
+use std::thread;
 
 // Добавляю недостающие импорты
 use embedded_graphics::mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder};
-use embedded_graphics::text::{Text, Baseline};
+use embedded_graphics::text::{Baseline, Text};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
     let mock_i2c = MockI2C;
     init_oled(mock_i2c);
-    
-    loop {}
+
+    loop {
+        thread::sleep(std::time::Duration::from_secs(1));
+    }
 }
 
 fn init_oled<I2C>(i2c: I2C)
@@ -48,7 +51,11 @@ impl embedded_hal::i2c::ErrorType for MockI2C {
 }
 
 impl embedded_hal::i2c::I2c for MockI2C {
-    fn transaction(&mut self, _address: u8, _operations: &mut [embedded_hal::i2c::Operation<'_>]) -> Result<(), Self::Error> {
+    fn transaction(
+        &mut self,
+        _address: u8,
+        _operations: &mut [embedded_hal::i2c::Operation<'_>],
+    ) -> Result<(), Self::Error> {
         Ok(())
     }
 }
