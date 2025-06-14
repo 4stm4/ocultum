@@ -6,8 +6,8 @@ use embedded_graphics::mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder};
 use embedded_graphics::text::{Baseline, Text};
 
 #[cfg(target_os = "none")]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+#[no_mangle]
+pub unsafe extern "C" fn _start() -> ! {
     let mock_i2c = MockI2C;
     init_oled(mock_i2c);
 
