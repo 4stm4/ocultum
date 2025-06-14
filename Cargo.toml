@@ -1,6 +1,21 @@
 [package]
 name = "ocultum"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+embedded-graphics = "0.8.1"
+embedded-hal = "1.0.0"
+ssd1306 = "0.10.0"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[features]
+linux = []
+
+[build]
+# Полное отключение зависимости от стандартной библиотеки `test`
