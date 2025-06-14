@@ -10,7 +10,7 @@ keywords = ["raspberry-pi", "eeprom", "hat", "i2c", "crc32"]
 categories = ["embedded", "hardware-support"]
 readme = "README.md"
 license = "MIT"
-authors = ["Alekei Zakharchenko <ehatrom@4stm4.ru>"]
+authors = ["Aleksei Zakharchenko <ehatrom@4stm4.ru>"]
 exclude = [
   "tests/*",
   "Dockerfile*",
