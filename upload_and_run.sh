@@ -8,4 +8,4 @@ echo "=== build ==="
 cargo build --release
 
 echo "=== run locally ==="
-./target/release/ocultum
+"$(dirname "$0")/target/release/ocultum"
