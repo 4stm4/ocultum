@@ -1,6 +1,11 @@
+#![no_std]
+#![no_main]
+
+use core::panic::PanicInfo;
+
 // Условная компиляция для Linux
 #[cfg(feature = "linux")]
-use linux_embedded_hal::{Delay, I2cdev}; 
+use linux_embedded_hal::{Delay, I2cdev};
 
 #[cfg(feature = "linux")] // Оборачиваем импорты, используемые в init_oled
 use embedded_graphics::{
@@ -12,13 +17,40 @@ use embedded_graphics::{
 #[cfg(feature = "linux")] // Оборачиваем импорты, используемые в init_oled
 use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
 
-#[cfg(target_os = "none")]
+// Заглушка для I2C и Delay для не-Linux систем (например, bare metal)
+#[cfg(not(feature = "linux"))]
+struct MockI2C;
+#[cfg(not(feature = "linux"))]
+impl embedded_hal::i2c::ErrorType for MockI2C {
+    type Error = core::convert::Infallible;
+}
+#[cfg(not(feature = "linux"))]
+impl embedded_hal::i2c::I2c for MockI2C {
+    fn transaction(
+        &mut self,
+        _address: u8,
+        _operations: &mut [embedded_hal::i2c::Operation<'_>],
+    ) -> Result<(), Self::Error> {
+        Ok(()) // В заглушке просто возвращаем Ok
+    }
+}
+
+#[cfg(not(feature = "linux"))]
+struct MockDelay;
+#[cfg(not(feature = "linux"))]
+impl embedded_hal::delay::DelayNs for MockDelay {
+    fn delay_ns(&mut self, _ns: u32) {}
+    fn delay_ms(&mut self, _ms: u32) {}
+    fn delay_us(&mut self, _us: u32) {}
+}
+
+#[cfg(target_os = "none")] // Для bare-metal
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
     loop {}
 }
 
-#[cfg(not(target_os = "none"))]
+#[cfg(not(target_os = "none"))] // Для систем с ОС (например, Linux)
 fn main() {
     eprintln!("P1: Host mode initialized (stderr)");
 
@@ -95,4 +127,9 @@ where
 
     #[cfg(not(target_os = "none"))]
     delay.delay_ms(5000);
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {}
 }
