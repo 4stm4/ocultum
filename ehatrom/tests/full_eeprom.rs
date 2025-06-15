@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use ehatrom::*;
 
 fn make_vendor() -> VendorInfoAtom {
