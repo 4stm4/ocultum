@@ -1,7 +1,7 @@
 [package]
 name = "ocultum"
 version = "0.1.0"
-edition = "2024"
+edition = "2024" # Было "2021", но для embedded-hal 1.0.0 и ssd1306 0.10.0 лучше использовать свежий edition, если нет других ограничений. Если у вас были причины для 2021, можно вернуть.
 readme = "README.md"
 license = "MIT"
 authors = ["Aleksei Zakharchenko <ehatrom@4stm4.ru>"]
@@ -11,6 +11,9 @@ embedded-graphics = "0.8.1"
 embedded-hal = "1.0.0"
 ssd1306 = "0.10.0"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+linux-embedded-hal = "0.4.0" # Используем версию 0.4.0, так как она совместима с embedded-hal 1.0.0
+
 [profile.dev]
 panic = "abort"
 
@@ -18,7 +21,5 @@ panic = "abort"
 panic = "abort"
 
 [features]
-linux = []
-
-[build]
-# Полное отключение зависимости от стандартной библиотеки `test`
+default = []
+linux = [] # Добавляем фичу linux
