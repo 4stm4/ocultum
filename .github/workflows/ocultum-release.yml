@@ -1,0 +1,28 @@
+name: Ocultum Release
+
+on:
+  push:
+    tags: [ '*' ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Set nightly as default
+        run: rustup default nightly
+      - name: Build release
+        run: cargo build --release --workspace
+      - name: Upload release binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocultum-release
+          path: target/release/ocultum
