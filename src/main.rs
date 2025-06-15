@@ -1,6 +1,8 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(all(not(feature = "linux"), target_os = "none"), no_std)]
+#![cfg_attr(all(not(feature = "linux"), target_os = "none"), no_main)]
 
+#[cfg(all(not(feature = "linux"), target_os = "none", not(test)))]
+// Используется только в no_std сборках не для тестов для bare-metal
 use core::panic::PanicInfo;
 
 // Условная компиляция для Linux
@@ -19,6 +21,7 @@ use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
 
 // Заглушка для I2C и Delay для не-Linux систем (например, bare metal)
 #[cfg(not(feature = "linux"))]
+#[allow(dead_code)]
 struct MockI2C;
 #[cfg(not(feature = "linux"))]
 impl embedded_hal::i2c::ErrorType for MockI2C {
@@ -36,6 +39,7 @@ impl embedded_hal::i2c::I2c for MockI2C {
 }
 
 #[cfg(not(feature = "linux"))]
+#[allow(dead_code)]
 struct MockDelay;
 #[cfg(not(feature = "linux"))]
 impl embedded_hal::delay::DelayNs for MockDelay {
@@ -44,44 +48,36 @@ impl embedded_hal::delay::DelayNs for MockDelay {
     fn delay_us(&mut self, _us: u32) {}
 }
 
-#[cfg(target_os = "none")] // Для bare-metal
+#[cfg(all(not(feature = "linux"), target_os = "none"))] // Для bare-metal и когда фича linux не активна
 #[no_mangle]
 pub unsafe extern "C" fn _start() -> ! {
+    // Тут может быть инициализация для MockI2C/MockDelay, если они нужны в _start
     loop {}
 }
 
-#[cfg(not(target_os = "none"))] // Для систем с ОС (например, Linux)
+#[cfg(feature = "linux")] // Для систем с ОС (например, Linux) и когда фича linux активна
 fn main() {
     eprintln!("P1: Host mode initialized (stderr)");
 
-    eprintln!("P2: Before linux feature check (stderr)");
+    eprintln!("P2: Linux feature IS enabled. Attempting real I2C. (stderr)"); // Теперь это утверждение всегда верно, если main компилируется
 
-    #[cfg(feature = "linux")]
-    {
-        eprintln!("P3: Linux feature IS enabled. Attempting real I2C. (stderr)");
-        match I2cdev::new("/dev/i2c-1") {
-            // Оставляем /dev/i2c-1, измените при необходимости
-            Ok(i2c) => {
-                eprintln!("P3.1: I2C device /dev/i2c-1 opened successfully. (stderr)");
-                let delay = Delay;
-                init_oled(i2c, delay);
-            }
-            Err(e) => {
-                eprintln!(
-                    "P3.2: ERROR - Failed to open I2C device /dev/i2c-1: {:?} (stderr)",
-                    e
-                );
-                eprintln!("P3.3: Please check the I2C device path and permissions. (stderr)");
-            }
+    // Непосредственно выполняем код для Linux, так как main компилируется только с фичей "linux"
+    match I2cdev::new("/dev/i2c-1") {
+        Ok(i2c) => {
+            eprintln!("P3.1: I2C device /dev/i2c-1 opened successfully. (stderr)");
+            let delay = Delay;
+            init_oled(i2c, delay);
+        }
+        Err(e) => {
+            eprintln!(
+                "P3.2: ERROR - Failed to open I2C device /dev/i2c-1: {:?} (stderr)",
+                e
+            );
+            eprintln!("P3.3: Please check the I2C device path and permissions. (stderr)");
         }
     }
 
-    #[cfg(not(feature = "linux"))]
-    {
-        eprintln!("P4: Linux feature IS NOT enabled. OLED initialization skipped. (stderr)");
-    }
-
-    eprintln!("P5: After feature checks. Main is ending. (stderr)");
+    eprintln!("P5: After I2C attempt. Main is ending. (stderr)"); // Сообщение P4 удалено как недостижимое
 }
 
 #[cfg(feature = "linux")] // Оборачиваем всю функцию
@@ -129,6 +125,17 @@ where
     delay.delay_ms(5000);
 }
 
+#[cfg(all(not(feature = "linux"), not(target_os = "none")))]
+fn main() {
+    // Эта main будет скомпилирована только для хост-систем (не bare-metal)
+    // когда фича "linux" НЕ активна.
+    // Она нужна, чтобы cargo build/test на хосте не падали с ошибкой E0601.
+    println!("This is a placeholder main for host builds without the 'linux' feature.");
+    println!("To run the OLED application, please build with '--features linux'.");
+}
+
+#[cfg(all(not(feature = "linux"), target_os = "none", not(test)))]
+// Компилируем только для no_std сборок, не являющихся тестами для bare-metal
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
