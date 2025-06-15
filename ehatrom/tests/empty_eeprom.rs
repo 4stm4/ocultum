@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 /*
   4STM4
   ocultum

@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use ehatrom::utils::crc32::Hasher;
 use std::time::Instant;
 
