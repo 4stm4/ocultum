@@ -1,7 +1,10 @@
 [package]
 name = "ocultum"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+readme = "README.md"
+license = "MIT"
+authors = ["Aleksei Zakharchenko <ehatrom@4stm4.ru>"]
 
 [dependencies]
 embedded-graphics = "0.8.1"

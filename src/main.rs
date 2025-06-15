@@ -1,8 +1,8 @@
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
-use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
+use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
 
 // Добавляю недостающие импорты
-use embedded_graphics::mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder};
+use embedded_graphics::mono_font::{MonoTextStyleBuilder, ascii::FONT_6X10};
 use embedded_graphics::text::{Baseline, Text};
 
 #[cfg(target_os = "none")]

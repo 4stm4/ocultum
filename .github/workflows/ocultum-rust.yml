@@ -16,7 +16,38 @@ on:
       - '!src/sim800rs/**'
 
 jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install rustfmt for nightly
+        run: rustup component add --toolchain nightly rustfmt
+      - name: cargo fmt
+        run: cargo +nightly fmt -- --check
+
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install clippy for nightly
+        run: rustup component add --toolchain nightly clippy
+      - name: cargo clippy
+        run: cargo +nightly clippy --workspace --all-targets -- -D warnings
+
   build:
+    needs: [fmt, clippy]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,25 +61,17 @@ jobs:
           override: true
       - name: Set nightly as default
         run: rustup default nightly
-      - name: Install rustfmt for nightly
-        run: rustup component add --toolchain nightly rustfmt
-      - name: Check formatting
-        run: cargo +nightly fmt -- --check
-      - name: Install clippy for nightly
-        run: rustup component add --toolchain nightly clippy
-      - name: Run clippy
-        run: cargo +nightly clippy --workspace --all-targets -- -D warnings
       - name: Build
         run: cargo build --workspace --all-targets --verbose
       - name: Run tests
         run: cargo test --workspace --all-targets --verbose
   release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust nightly
