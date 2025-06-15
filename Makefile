@@ -17,16 +17,11 @@ ehatrom_ci_local:
 	cargo test --workspace --all-targets --verbose
 
 ocultum_ci_local:
-	# Установка nightly версии Rust
 	rustup install nightly; \
 	rustup default nightly; \
 	rustup component add --toolchain nightly rustfmt; \
 	rustup component add --toolchain nightly clippy; \
-	# Проверка формата
 	cargo +nightly fmt -- --check; \
-	# Запуск Clippy
 	cargo +nightly clippy --workspace --all-targets -- -D warnings; \
-	# Сборка проекта
 	cargo build --workspace --all-targets --verbose; \
-	# Запуск тестов
 	cargo test --workspace --all-targets --verbose
