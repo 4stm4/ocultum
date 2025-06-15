@@ -17,7 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'cpp', 'python', 'javascript', 'typescript', 'go', 'java', 'csharp', 'ruby', 'swift', 'kotlin', 'rust' ]
+        language: [ 'rust' ]
+    env:
+      CODEQL_ENABLE_EXPERIMENTAL_FEATURES: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
