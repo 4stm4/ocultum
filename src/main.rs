@@ -1,5 +1,5 @@
 use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    mono_font::{MonoTextStyleBuilder, ascii::FONT_6X10},
     pixelcolor::BinaryColor,
     prelude::*,
     text::{Baseline, Text},
@@ -8,7 +8,7 @@ use ssd1306::{I2CDisplayInterface, Ssd1306, prelude::*};
 
 // Условная компиляция для Linux
 #[cfg(feature = "linux")]
-use linux_embedded_hal::{I2cdev, Delay};
+use linux_embedded_hal::{Delay, I2cdev};
 
 // Заглушка для I2C и Delay для не-Linux систем (например, bare metal)
 #[cfg(not(feature = "linux"))]
@@ -36,7 +36,6 @@ impl embedded_hal::delay::DelayNs for MockDelay {
     fn delay_ms(&mut self, _ms: u32) {}
     fn delay_us(&mut self, _us: u32) {}
 }
-
 
 #[cfg(target_os = "none")] // Для bare-metal
 #[no_mangle]
