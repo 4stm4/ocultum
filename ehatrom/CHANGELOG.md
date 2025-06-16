@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] — 2025-06-13
+## [0.3.0] — 2025-06-17
 - **BREAKING**: **Bare-Metal Support** - Library now supports `#![no_std]` environments
   - Conditional compilation with feature flags: `alloc`, `std`, `linux`
   - Alternative APIs for no-allocation environments (`serialize_to_slice`, `serialize_to_buffer`)
