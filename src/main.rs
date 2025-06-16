@@ -52,6 +52,6 @@ fn main() {
             }
         }
 
-    eprint!("Program execution completed");
+            eprint!("Program execution completed");
     }
 }
