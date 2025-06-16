@@ -1,0 +1,12 @@
+[build]
+# По умолчанию используем стандартный таргет (не кросс-компиляцию)
+# Раскомментируйте следующую строку для компиляции всегда под Raspberry Pi
+# target = "armv7-unknown-linux-gnueabihf"
+
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Раскомментируйте следующие строки, если у вас установлен nightly Rust
+# [unstable]
+# build-std = ["core", "compiler_builtins", "alloc"]
