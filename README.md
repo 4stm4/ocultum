@@ -1,39 +1,85 @@
 # ocultum
 
-This repository groups a few Rust crates targeting small embedded setups such as Raspberry Pi or similar boards. The top level crate `ocultum` demonstrates basic usage of an SSD1306 OLED display using `embedded-graphics`.
+A project for working with the SSD1306 OLED display on Raspberry Pi Zero 2W using I2C interface. The application automatically detects the display on available I2C buses and outputs text to it.
 
-## Subcrates
+> **Note**: This application is specifically designed to run on Raspberry Pi Zero 2W and is not compatible with other platforms.
 
-- **ocultum** – example application showing text on an OLED screen. [Documentation](https://docs.rs/?crate=ocultum "Generated docs") will be available once published with `cargo doc`.
-- **ehatrom** – library for creating and handling Raspberry Pi HAT EEPROM images. [Documentation](https://docs.rs/ehatrom) is published on docs.rs.
-- **sim800rs** – experimental library for interacting with SIM800 GSM/GPRS modules over UART. [Documentation](https://docs.rs/?crate=sim800rs "Generated docs") can be generated locally.
+## Subdirectories
 
-## Building
+- **ocultum** – main application for displaying text on the OLED screen.
+- **ehatrom** – library for creating and processing EEPROM images for Raspberry Pi HAT.
+- **sim800rs** – experimental library for interacting with SIM800 GSM/GPRS modules via UART.
 
-Ensure you have a recent Rust toolchain (nightly is required for CI). To build all crates in the workspace:
+## Building and Running
 
-```sh
-cargo build --workspace
-```
-
-### Cross compilation
-
-For cross‑compiling to `armv7-unknown-linux-gnueabihf`, use:
+### Local Build on Raspberry Pi
 
 ```sh
-./cross_compile.sh
+# On the Raspberry Pi itself
+cargo build --release
+sudo ./target/release/ocultum
 ```
 
-### Uploading and running
+### Building and Running via Docker (recommended)
 
-For quick deployment to a Raspberry Pi after building, use:
+Docker provides an isolated environment and automatically installs all necessary dependencies.
 
 ```sh
-./upload_and_run.sh
+# Running on Raspberry Pi via Docker
+./docker_build_run.sh
+
+# Local Docker run (only for testing on systems with I2C)
+./docker_build_run.sh local
 ```
 
-The `ehatrom` crate also provides `ehatrom/update_and_run.sh` which demonstrates reading and writing real HAT EEPROMs.
+### Remote Build and Run (alternative method)
+
+For building and running directly on Raspberry Pi:
+
+```sh
+./build_and_run.sh remote
+```
+
+or
+
+```sh
+./build_on_remote.sh run
+```
+
+> **Note**: SSH access to the Raspberry Pi must be configured. If necessary, modify the host and port in the build_on_remote.sh script.
+
+## Functionality
+
+- Automatic detection of OLED displays on I2C buses
+- Scanning I2C buses for devices
+- Displaying text on the OLED screen
+
+## Requirements
+
+- Raspberry Pi Zero 2W or other compatible single-board computer
+- SSD1306 OLED display with I2C interface
+- Connected display via I2C (typically SDA, SCL, GND, VCC pins)
+- Enabled I2C interface on Raspberry Pi (`sudo raspi-config`)
+
+## Raspberry Pi Setup
+
+1. Enable I2C interface:
+   ```sh
+   sudo raspi-config
+   # Select Interfacing Options -> I2C -> Yes
+   ```
+
+2. Install necessary packages:
+   ```sh
+   sudo apt update
+   sudo apt install -y i2c-tools libi2c-dev
+   ```
+
+3. Check for I2C devices:
+   ```sh
+   sudo i2cdetect -y 1
+   ```
 
 ## License
 
-This project is licensed under the MIT license.
+This project is distributed under the MIT license.

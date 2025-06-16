@@ -1,6 +1,3 @@
-build:
-	docker build -t ehatrom-ci ./ehatrom
-
 ehatrom_ci:
 	docker run --rm -it \
 		-v "$(PWD)/ehatrom":/ehatrom \
@@ -24,4 +21,18 @@ ocultum_ci_local:
 	cargo +nightly fmt -- --check; \
 	cargo +nightly clippy --workspace --all-targets -- -D warnings; \
 	cargo build --workspace --all-targets --verbose; \
-	cargo test --workspace --all-targets --verbose
+	cargo test --workspace --all-targets --verbose; \
+	cargo build --release; \
+	cargo doc --no-deps
+
+ocultum_ci:
+	docker run --rm -it \
+		-v "$(PWD)":/ocultum \
+		-w /ocultum \
+		ocultum-ci \
+		bash -c "cargo +nightly fmt -- --check && \
+		         cargo +nightly clippy --workspace --all-targets -- -D warnings && \
+		         cargo build --workspace --all-targets --verbose && \
+		         cargo test --workspace --all-targets --verbose && \
+		         cargo build --release && \
+		         cargo doc --no-deps"

@@ -12,14 +12,10 @@ embedded-hal = "1.0.0"
 ssd1306 = "0.10.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-linux-embedded-hal = "0.4.0" # Используем версию 0.4.0, так как она совместима с embedded-hal 1.0.0
+linux-embedded-hal = "0.4.0"
 
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
-
-[features]
-default = []
-linux = [] # Добавляем фичу linux
