@@ -12,7 +12,7 @@ A project for working with the SSD1306 OLED display on Raspberry Pi Zero 2W usin
 ## Dependencies
 
 The project now uses the following external libraries:
-- **ehatrom** (v0.3.0) - library for working with Raspberry Pi HAT EEPROM via I2C
+- **ehatrom** (v0.3.1) - library for working with Raspberry Pi HAT EEPROM via I2C
 - **ssd1306** - library for controlling SSD1306 OLED displays
 - **embedded-graphics** - graphics library for embedded displays
 - **embedded-hal** - hardware abstraction layer for embedded systems
@@ -61,6 +61,7 @@ or
 - Displaying text on the OLED screen
 - Reading and displaying Raspberry Pi HAT EEPROM data (vendor, product, and UUID information)
 - Shows detailed HAT information using ehatrom library
+- Auto-detection of HAT EEPROM on multiple I2C buses (/dev/i2c-0 and /dev/i2c-1)
 
 ## Requirements
 

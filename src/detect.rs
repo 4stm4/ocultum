@@ -2,7 +2,7 @@ use embedded_hal::i2c::I2c;
 use std::fmt::Write;
 
 #[cfg(target_os = "linux")]
-use linux_embedded_hal::I2cdev;
+pub use linux_embedded_hal::I2cdev;
 
 #[cfg(not(target_os = "linux"))]
 // Заглушка для I2cdev при компиляции на не-Linux платформах

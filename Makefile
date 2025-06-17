@@ -1,4 +1,4 @@
-ocultum_ci_local:
+ci_local:
 	rustup install nightly; \
 	rustup default nightly; \
 	rustup component add --toolchain nightly rustfmt; \
@@ -10,7 +10,7 @@ ocultum_ci_local:
 	cargo build --release; \
 	cargo doc --no-deps
 
-ocultum_ci:
+ci:
 	docker run --rm -it \
 		-v "$(PWD)":/ocultum \
 		-w /ocultum \

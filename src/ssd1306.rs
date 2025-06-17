@@ -27,13 +27,13 @@ where
     }
 
     display_ehatrom_info(&mut disp, address);
-    
+
     // Update display content
     if let Err(e) = disp.flush() {
-        eprintln!("ERROR: Failed to flush OLED display: {:?}", e);
+        eprintln!("ERROR: Failed to flush OLED display: {e:?}");
         return;
     }
-    
+
     eprintln!("OLED display initialized and running");
 }
 
@@ -48,18 +48,16 @@ where
         .build();
 
     // Attempt to get ehatrom data
-    let vendor_name = match get_ehatrom_vendor_info() {
-        Some(name) => name,
-        None => "Unknown vendor".to_string(),
-    };
-    
-    let product_name = match get_ehatrom_product_name() {
-        Some(name) => name,
-        None => "Unknown product".to_string(),
-    };
-    
-    let product_uuid = match get_ehatrom_product_uuid() {
-        Some(uuid) => format!("UUID: {}", uuid),
+    let ehatrom_data = get_ehatrom_data();
+
+    let vendor_name = ehatrom_data
+        .vendor_name
+        .unwrap_or_else(|| "Unknown vendor".to_string());
+    let product_name = ehatrom_data
+        .product_name
+        .unwrap_or_else(|| "Unknown product".to_string());
+    let product_uuid = match ehatrom_data.product_uuid {
+        Some(uuid) => format!("UUID: {uuid}"),
         None => "No UUID found".to_string(),
     };
 
@@ -69,134 +67,134 @@ where
         || Text::with_baseline(&vendor_name, Point::new(0, 22), text_style, Baseline::Top)
             .draw(disp)
             .is_err()
-        || Text::with_baseline(
-            &product_name,
-            Point::new(0, 36),
-            text_style,
-            Baseline::Top,
-        )
-        .draw(disp)
-        .is_err()
+        || Text::with_baseline(&product_name, Point::new(0, 36), text_style, Baseline::Top)
+            .draw(disp)
+            .is_err()
         || Text::with_baseline(&product_uuid, Point::new(0, 50), text_style, Baseline::Top)
             .draw(disp)
             .is_err()
     {
         eprintln!("ERROR: Failed to draw on OLED display");
-        return;
     }
 }
 
-/// Gets vendor name from HAT EEPROM
-fn get_ehatrom_vendor_info() -> Option<String> {
-    #[cfg(target_os = "linux")]
-    {
-        // Try to read EEPROM via ehatrom at standard HAT EEPROM address (0x50)
-        let mut buffer = vec![0u8; 256]; // Buffer size for reading EEPROM
-        
-        match ehatrom::read_from_eeprom_i2c(&mut buffer, "/dev/i2c-0", 0x50, 0) {
-            Ok(bytes_read) => {
-                eprintln!("Successfully read {} bytes from HAT EEPROM", bytes_read);
-                
-                // Try to parse read data
-                match ehatrom::Eeprom::from_bytes(&buffer[..bytes_read]) {
-                    Ok(eeprom) => {
-                        // Look for VendorInfo atom
-                        for atom in eeprom.atoms() {
-                            if let ehatrom::Atom::VendorInfo(vendor_info) = atom {
-                                return Some(vendor_info.vendor_name().to_string());
-                            }
-                        }
-                        None
-                    }
-                    Err(e) => {
-                        eprintln!("Error parsing EEPROM data: {:?}", e);
-                        None
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("Error reading from HAT EEPROM: {:?}", e);
-                None
-            }
-        }
-    }
-    
-    #[cfg(not(target_os = "linux"))]
-    {
-        // On non-Linux platforms return test data
-        Some("Simulated Vendor".to_string())
-    }
+/// Структура для хранения данных из HAT EEPROM
+struct EhatromData {
+    vendor_name: Option<String>,
+    product_name: Option<String>,
+    product_uuid: Option<String>,
 }
 
-/// Gets product name from HAT EEPROM
-fn get_ehatrom_product_name() -> Option<String> {
+/// Читает все данные EEPROM и возвращает структуру с информацией
+fn get_ehatrom_data() -> EhatromData {
     #[cfg(target_os = "linux")]
     {
-        // Try to read EEPROM via ehatrom at standard HAT EEPROM address (0x50)
-        let mut buffer = vec![0u8; 256]; // Buffer size for reading EEPROM
-        
-        match ehatrom::read_from_eeprom_i2c(&mut buffer, "/dev/i2c-0", 0x50, 0) {
-            Ok(bytes_read) => {
-                // Try to parse read data
-                match ehatrom::Eeprom::from_bytes(&buffer[..bytes_read]) {
-                    Ok(eeprom) => {
-                        // Look for VendorInfo atom
-                        for atom in eeprom.atoms() {
-                            if let ehatrom::Atom::VendorInfo(vendor_info) = atom {
-                                return Some(vendor_info.product_name().to_string());
-                            }
-                        }
-                        None
-                    }
-                    Err(_) => None
-                }
-            }
-            Err(_) => None
-        }
-    }
-    
-    #[cfg(not(target_os = "linux"))]
-    {
-        // On non-Linux platforms return test data
-        Some("Simulated Product".to_string())
-    }
-}
+        // Список шин I2C для проверки
+        let i2c_buses = ["/dev/i2c-0", "/dev/i2c-1"];
+        let eeprom_addr = 0x50;
 
-/// Получает UUID продукта из EEPROM HAT
-fn get_ehatrom_product_uuid() -> Option<String> {
-    #[cfg(target_os = "linux")]
-    {
-        // Попытка прочитать EEPROM через ehatrom на стандартном адресе HAT EEPROM (0x50)
-        let mut buffer = vec![0u8; 256]; // Размер буфера для чтения EEPROM
-        
-        match ehatrom::read_from_eeprom_i2c(&mut buffer, "/dev/i2c-0", 0x50, 0) {
-            Ok(bytes_read) => {
-                // Попытка распарсить прочитанные данные
-                match ehatrom::Eeprom::from_bytes(&buffer[..bytes_read]) {
-                    Ok(eeprom) => {
-                        // Ищем атом с информацией о производителе
-                        for atom in eeprom.atoms() {
-                            if let ehatrom::Atom::VendorInfo(vendor_info) = atom {
-                                // Форматируем байты UUID в строку
-                                let uuid = vendor_info.product_uuid();
-                                return Some(format!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
-                                    uuid.time_low, uuid.time_mid, uuid.time_hi_version,
-                                    (uuid.clock_seq_hi_variant as u16) << 8 | (uuid.clock_seq_low as u16),
-                                    uuid.node));
-                            }
-                        }
-                        None
-                    }
-                    Err(_) => None
-                }
+        for &bus in &i2c_buses {
+            match read_ehatrom_from_bus(bus, eeprom_addr) {
+                Some(data) => return data,
+                None => continue,
             }
-            Err(_) => None
+        }
+
+        // Если не удалось прочитать с любой шины, возвращаем пустые данные
+        EhatromData {
+            vendor_name: None,
+            product_name: None,
+            product_uuid: None,
         }
     }
-    
+
     #[cfg(not(target_os = "linux"))]
     {
         // На не-Linux платформах возвращаем тестовые данные
-        Some("a1b2c3d4-e5f6-7890-abcd-ef1234567890".to_string())
+        EhatromData {
+            vendor_name: Some("Simulated Vendor".to_string()),
+            product_name: Some("Simulated Product".to_string()),
+            product_uuid: Some("a1b2c3d4-e5f6-7890-abcd-ef1234567890".to_string()),
+        }
     }
+}
+
+/// Читает данные EEPROM с указанной шины I2C
+#[cfg(target_os = "linux")]
+fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
+    let mut buffer = vec![0u8; 256]; // Буфер для чтения EEPROM
+
+    // Адрес должен быть u16 для этой функции
+    let addr_u16: u16 = addr.into();
+
+    match ehatrom::read_from_eeprom_i2c(&mut buffer, bus, addr_u16, 0) {
+        Ok(_) => {
+            eprintln!("Successfully read bytes from HAT EEPROM on {bus}");
+
+            // Пробуем парсить прочитанные данные
+            if let Ok(eeprom) = ehatrom::Eeprom::from_bytes(&buffer) {
+                // В версии 0.3.1 vendor_info - это поле, а не метод
+                // Проверяем значение поля vendor_info
+                let vendor_info = eeprom.vendor_info;
+                // Преобразуем байтовые массивы в строки
+                let vendor_str = String::from_utf8_lossy(
+                    &vendor_info
+                        .vendor
+                        .iter()
+                        .take_while(|&&b| b != 0)
+                        .cloned()
+                        .collect::<Vec<u8>>(),
+                )
+                .to_string();
+
+                let product_str = String::from_utf8_lossy(
+                    &vendor_info
+                        .product
+                        .iter()
+                        .take_while(|&&b| b != 0)
+                        .cloned()
+                        .collect::<Vec<u8>>(),
+                )
+                .to_string();
+
+                // Проверяем, есть ли данные
+                if !vendor_str.is_empty() {
+                    // Форматируем UUID (16 байт) в строку
+                    let uuid_bytes = &vendor_info.uuid;
+                    let uuid_str = format!(
+                        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+                        uuid_bytes[0],
+                        uuid_bytes[1],
+                        uuid_bytes[2],
+                        uuid_bytes[3],
+                        uuid_bytes[4],
+                        uuid_bytes[5],
+                        uuid_bytes[6],
+                        uuid_bytes[7],
+                        uuid_bytes[8],
+                        uuid_bytes[9],
+                        uuid_bytes[10],
+                        uuid_bytes[11],
+                        uuid_bytes[12],
+                        uuid_bytes[13],
+                        uuid_bytes[14],
+                        uuid_bytes[15]
+                    );
+
+                    return Some(EhatromData {
+                        vendor_name: Some(vendor_str),
+                        product_name: Some(product_str),
+                        product_uuid: Some(uuid_str),
+                    });
+                }
+            } else {
+                eprintln!("Error parsing EEPROM data from {bus}");
+            }
+        }
+        Err(e) => {
+            eprintln!("Error reading from HAT EEPROM on {bus}: {e:?}");
+        }
+    }
+
+    None
 }

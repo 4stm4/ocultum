@@ -4,6 +4,9 @@ mod ssd1306;
 #[cfg(target_os = "linux")]
 use linux_embedded_hal::Delay;
 
+// Import I2cdev from detect module
+use crate::detect::I2cdev;
+
 #[cfg(not(target_os = "linux"))]
 pub struct Delay;
 
@@ -21,7 +24,7 @@ fn main() {
     if let Some((bus, address)) = detect::detect_display_i2c(9) {
         eprintln!("Automatically detected display on I2C-{bus} at address 0x{address:02X}");
         let i2c_path = format!("/dev/i2c-{bus}");
-        match detect::I2cdev::new(&i2c_path) {
+        match I2cdev::new(&i2c_path) {
             Ok(i2c) => {
                 eprintln!("I2C device {i2c_path} successfully opened");
                 let delay = Delay;
@@ -36,7 +39,7 @@ fn main() {
 
         let default_address = detect::SSD1306_COMMON_ADDRESSES[0];
 
-        match detect::I2cdev::new("/dev/i2c-1") {
+        match I2cdev::new("/dev/i2c-1") {
             Ok(i2c) => {
                 eprintln!("I2C device /dev/i2c-1 successfully opened");
                 let delay = Delay;

@@ -105,6 +105,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ehatrom"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b41869cd91bc793a680946933033a33776c3ba8fb2c8904a1922def8750fd9a"
+dependencies = [
+ "i2cdev",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -326,6 +335,7 @@ dependencies = [
 name = "ocultum"
 version = "0.1.0"
 dependencies = [
+ "ehatrom",
  "embedded-graphics",
  "embedded-hal",
  "linux-embedded-hal",
