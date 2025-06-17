@@ -214,150 +214,360 @@ fn get_ehatrom_data() -> EhatromData {
 /// Читает данные EEPROM с указанной шины I2C с использованием функций ehatrom
 #[cfg(target_os = "linux")]
 fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
-    let mut buffer = vec![0u8; 256]; // Буфер для чтения EEPROM
+    // Увеличиваем буфер до 512 байт для более надежного чтения
+    let mut buffer = vec![0u8; 512]; 
 
     // Адрес должен быть u16 для этой функции
     let addr_u16: u16 = addr.into();
 
-    match ehatrom::read_from_eeprom_i2c(&mut buffer, bus, addr_u16, 0) {
-        Ok(_) => {
-            // Определяем фактический размер данных (до первого нулевого байта или конца буфера)
-            let bytes_read_usize = buffer.iter().position(|&b| b == 0).unwrap_or(buffer.len());
-            eprintln!("Successfully read {bytes_read_usize} bytes from HAT EEPROM on {bus}");
-
-            // Выводим первые 16 байт для диагностики
-            if bytes_read_usize > 0 {
-                let end_idx = std::cmp::min(16, bytes_read_usize);
-                eprintln!("First 16 bytes: {:?}", &buffer[0..end_idx]);
-            }
-
-            // Проверяем сигнатуру Raspberry Pi HAT
-            if bytes_read_usize >= 4 && &buffer[0..4] == b"R-Pi" {
-                eprintln!("Found valid HAT signature on {bus}");
-            } else if bytes_read_usize >= 4 {
-                eprintln!(
-                    "No HAT signature found on {bus} (first 4 bytes: {:?})",
-                    &buffer[0..4]
-                );
-            }
-
-            // Пробуем парсить прочитанные данные
-            match ehatrom::Eeprom::from_bytes(&buffer) {
-                Ok(eeprom) => {
-                    // В версии 0.3.1 vendor_info - это поле, а не метод
-                    // Проверяем значение поля vendor_info
-                    let vendor_info = eeprom.vendor_info;
-                    // Преобразуем байтовые массивы в строки
-                    let vendor_str = String::from_utf8_lossy(
-                        &vendor_info
-                            .vendor
-                            .iter()
-                            .take_while(|&&b| b != 0)
-                            .cloned()
-                            .collect::<Vec<u8>>(),
-                    )
-                    .to_string();
-
-                    let product_str = String::from_utf8_lossy(
-                        &vendor_info
-                            .product
-                            .iter()
-                            .take_while(|&&b| b != 0)
-                            .cloned()
-                            .collect::<Vec<u8>>(),
-                    )
-                    .to_string();
-
-                    // Форматируем UUID (16 байт) в строку
-                    let uuid_bytes = &vendor_info.uuid;
-                    let uuid_str = format!(
-                        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-                        uuid_bytes[0],
-                        uuid_bytes[1],
-                        uuid_bytes[2],
-                        uuid_bytes[3],
-                        uuid_bytes[4],
-                        uuid_bytes[5],
-                        uuid_bytes[6],
-                        uuid_bytes[7],
-                        uuid_bytes[8],
-                        uuid_bytes[9],
-                        uuid_bytes[10],
-                        uuid_bytes[11],
-                        uuid_bytes[12],
-                        uuid_bytes[13],
-                        uuid_bytes[14],
-                        uuid_bytes[15]
-                    );
-
-                    eprintln!("Found HAT EEPROM data on {bus}:");
-                    eprintln!("  Vendor: {vendor_str}");
-                    eprintln!("  Product: {product_str}");
-                    eprintln!("  UUID: {uuid_str}");
-
-                    // Получаем количество устройств на этой шине
-                    let all_buses = crate::detect::detect_all_i2c_devices();
-                    let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
-
-                    return Some(EhatromData {
-                        vendor_name: Some(if vendor_str.is_empty() {
-                            "Unknown vendor".to_string()
-                        } else {
-                            vendor_str
-                        }),
-                        product_name: Some(if product_str.is_empty() {
-                            "Unknown product".to_string()
-                        } else {
-                            product_str
-                        }),
-                        product_uuid: Some(uuid_str),
-                        bus_path: Some(bus.to_string()), // Сохраняем путь к шине
-                        other_devices: Some(devices_count),
-                    });
+    // Пытаемся читать блоками по разным размерам для более надежного чтения
+    let mut total_bytes_read = 0;
+    let mut read_error = false;
+    
+    // Попробуем несколько разных смещений и размеров блоков для чтения
+    for (offset, block_size) in [(0, 32), (0, 64), (0, 128), (0, 256), (0, 512)] {
+        let mut temp_buffer = vec![0u8; block_size];
+        match ehatrom::read_from_eeprom_i2c(&mut temp_buffer, bus, addr_u16, offset) {
+            Ok(bytes) => {
+                eprintln!("Read {} bytes from offset {} (block size {}) on {}", bytes, offset, block_size, bus);
+                // Если успешно прочитали больше данных, используем их
+                if bytes > total_bytes_read {
+                    total_bytes_read = bytes;
+                    buffer[0..bytes].copy_from_slice(&temp_buffer[0..bytes]);
+                    // Если прочитали полный блок, возможно, есть еще данные
+                    if bytes == block_size && block_size < 512 {
+                        continue;
+                    } else {
+                        // Мы получили неполный блок или максимальный размер, данных больше нет
+                        break;
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Error parsing EEPROM data from {bus}: {e:?}");
-                    // Если есть хотя бы какие-то данные, можно попытаться извлечь информацию
-                    // из необработанных байтов EEPROM
-                    if bytes_read_usize >= 16 {
-                        eprintln!("Trying to extract basic info from raw bytes...");
+            },
+            Err(e) => {
+                eprintln!("Error reading {}-byte block at offset {} from HAT EEPROM on {}: {:?}", 
+                    block_size, offset, bus, e);
+                read_error = true;
+                // Продолжаем с другими параметрами
+            }
+        }
+    }
 
-                        // Проверяем, есть ли сигнатура Raspberry Pi
-                        if &buffer[0..4] == b"R-Pi" {
-                            let vendor_str =
-                                format!("Unknown vendor (ID: {:02X}{:02X})", buffer[8], buffer[9]);
-                            let product_str = format!("Unknown product (Bus: {bus})");
+    // Если ничего не смогли прочитать ни одним из способов
+    if total_bytes_read == 0 {
+        if read_error {
+            eprintln!("Failed to read any data from HAT EEPROM on {} after multiple attempts", bus);
+        } else {
+            eprintln!("No data received from HAT EEPROM on {}", bus);
+        }
+        return None;
+    }
 
-                            // Пытаемся сформировать UUID из доступных байтов
-                            let uuid_str = if bytes_read_usize >= 32 {
-                                format!(
-                                    "Partial UUID: {:02x}{:02x}{:02x}{:02x}-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                                    buffer[28], buffer[29], buffer[30], buffer[31]
-                                )
-                            } else {
-                                "Unknown UUID".to_string()
-                            };
+    eprintln!("Successfully read {total_bytes_read} bytes from HAT EEPROM on {bus}");
 
-                            // Получаем количество устройств на этой шине
-                            let all_buses = crate::detect::detect_all_i2c_devices();
-                            let devices_count =
-                                all_buses.iter().map(|(_, devices)| devices.len()).sum();
+    // Выводим больше байт для лучшей диагностики
+    if total_bytes_read > 0 {
+        // Первые 32 байта
+        let end_idx = std::cmp::min(32, total_bytes_read);
+        let hex_bytes: Vec<String> = buffer[0..end_idx].iter().map(|b| format!("{:02X}", b)).collect();
+        eprintln!("First 32 bytes: [{}]", hex_bytes.join(", "));
+        
+        // Также выводим в ASCII формате, где это возможно
+        let ascii_bytes: String = buffer[0..end_idx]
+            .iter()
+            .map(|&b| if b >= 32 && b <= 126 { b as char } else { '.' })
+            .collect();
+        eprintln!("ASCII representation: [{}]", ascii_bytes);
+    }
 
-                            return Some(EhatromData {
-                                vendor_name: Some(vendor_str),
-                                product_name: Some(product_str),
-                                product_uuid: Some(uuid_str),
-                                bus_path: Some(bus.to_string()),
-                                other_devices: Some(devices_count),
-                            });
+    // Проверяем разные форматы сигнатуры Raspberry Pi HAT
+    let has_rpi_signature = if total_bytes_read >= 4 {
+        // Стандартная сигнатура "R-Pi" в ASCII
+        let has_ascii_sig = &buffer[0..4] == b"R-Pi";
+        
+        // Шестнадцатеричное представление "R-Pi" [52, 2D, 50, 69]
+        let has_hex_sig = buffer[0] == 0x52 && buffer[1] == 0x2D && 
+                          buffer[2] == 0x50 && buffer[3] == 0x69;
+        
+        // Альтернативные форматы, которые могут использоваться
+        let has_alt_sig1 = buffer[0] == b'R' && buffer[1] == b'-' && 
+                           buffer[2] == b'P' && buffer[3] == b'i';
+        
+        has_ascii_sig || has_hex_sig || has_alt_sig1
+    } else {
+        false
+    };
+
+    if has_rpi_signature {
+        eprintln!("Found valid HAT signature on {bus}");
+        
+        // Пробуем парсить прочитанные данные с помощью ehatrom
+        match ehatrom::Eeprom::from_bytes(&buffer[0..total_bytes_read]) {
+            Ok(eeprom) => {
+                // В версии 0.3.1 vendor_info - это поле, а не метод
+                let vendor_info = eeprom.vendor_info;
+                
+                // Преобразуем байтовые массивы в строки, обрабатывая нулевые байты
+                let vendor_str = String::from_utf8_lossy(
+                    &vendor_info
+                        .vendor
+                        .iter()
+                        .take_while(|&&b| b != 0)
+                        .cloned()
+                        .collect::<Vec<u8>>(),
+                )
+                .to_string();
+
+                let product_str = String::from_utf8_lossy(
+                    &vendor_info
+                        .product
+                        .iter()
+                        .take_while(|&&b| b != 0)
+                        .cloned()
+                        .collect::<Vec<u8>>(),
+                )
+                .to_string();
+
+                // Форматируем UUID (16 байт) в строку
+                let uuid_bytes = &vendor_info.uuid;
+                let uuid_str = format!(
+                    "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+                    uuid_bytes[0], uuid_bytes[1], uuid_bytes[2], uuid_bytes[3],
+                    uuid_bytes[4], uuid_bytes[5], uuid_bytes[6], uuid_bytes[7],
+                    uuid_bytes[8], uuid_bytes[9], uuid_bytes[10], uuid_bytes[11],
+                    uuid_bytes[12], uuid_bytes[13], uuid_bytes[14], uuid_bytes[15]
+                );
+
+                eprintln!("Successfully parsed HAT EEPROM data on {bus}:");
+                eprintln!("  Vendor: {vendor_str}");
+                eprintln!("  Product: {product_str}");
+                eprintln!("  UUID: {uuid_str}");
+
+                // Получаем количество устройств на этой шине
+                let all_buses = crate::detect::detect_all_i2c_devices();
+                let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
+
+                // Выводим информацию об атомах для диагностики
+                if let Some(atoms) = eeprom.atoms {
+                    eprintln!("  EEPROM contains {} atoms", atoms.len());
+                    for (i, atom) in atoms.iter().enumerate() {
+                        eprintln!("  Atom {}: type={:?}, count={}", i, atom.atom_type, atom.count);
+                    }
+                } else {
+                    eprintln!("  EEPROM contains no atoms or atom parsing failed");
+                }
+
+                return Some(EhatromData {
+                    vendor_name: Some(if vendor_str.is_empty() {
+                        "Unknown vendor".to_string()
+                    } else {
+                        vendor_str
+                    }),
+                    product_name: Some(if product_str.is_empty() {
+                        "Unknown product".to_string()
+                    } else {
+                        product_str
+                    }),
+                    product_uuid: Some(uuid_str),
+                    bus_path: Some(bus.to_string()), // Сохраняем путь к шине
+                    other_devices: Some(devices_count),
+                });
+            }
+            Err(e) => {
+                eprintln!("Error parsing EEPROM data from {bus}: {e:?}");
+                
+                // Данные HAT EEPROM доступны, но их формат неправильный или неполный
+                // Попробуем извлечь как можно больше информации из сырых данных
+                
+                // Вывести больше байтов в диагностических целях
+                let diag_bytes = std::cmp::min(128, total_bytes_read);
+                let hex_bytes: Vec<String> = buffer[0..diag_bytes].iter().map(|b| format!("{:02X}", b)).collect();
+                eprintln!("Raw HAT data (first {} bytes): [{}]", diag_bytes, hex_bytes.join(", "));
+                
+                // Выводим также ASCII представление для лучшего анализа
+                let ascii_bytes: String = buffer[0..diag_bytes]
+                    .iter()
+                    .map(|&b| if b >= 32 && b <= 126 { b as char } else { '.' })
+                    .collect();
+                eprintln!("ASCII representation: [{}]", ascii_bytes);
+                
+                // Попытка проанализировать формат данных и структуру атома
+                eprintln!("Analyzing HAT data format for error diagnostics:");
+                if total_bytes_read >= 8 {
+                    eprintln!("  Header bytes: [{:02X}, {:02X}, {:02X}, {:02X}, {:02X}, {:02X}, {:02X}, {:02X}]",
+                              buffer[0], buffer[1], buffer[2], buffer[3], 
+                              buffer[4], buffer[5], buffer[6], buffer[7]);
+                }
+                
+                // Проверка на наличие атомарной структуры
+                // Обычно после заголовка "R-Pi" идут идентификаторы атомов
+                let mut has_atom_structure = false;
+                if total_bytes_read >= 12 {
+                    // Проверяем байты 4-7 для идентификатора АТОМА и байты 8-11 для длины
+                    eprintln!("  Possible atom header at offset 4: [{:02X}, {:02X}, {:02X}, {:02X}]",
+                              buffer[4], buffer[5], buffer[6], buffer[7]);
+                    eprintln!("  Possible atom length at offset 8: [{:02X}, {:02X}, {:02X}, {:02X}]",
+                              buffer[8], buffer[9], buffer[10], buffer[11]);
+                    
+                    // Простая эвристика для проверки формата атома
+                    if buffer[4] < 16 && buffer[5] == 0 && buffer[6] == 0 && buffer[7] == 0 && 
+                       buffer[8] < 128 && buffer[9] == 0 && buffer[10] == 0 && buffer[11] == 0 {
+                        has_atom_structure = true;
+                        eprintln!("  Data appears to have valid atom structure");
+                    } else {
+                        eprintln!("  Data does not appear to have standard atom structure");
+                    }
+                }
+                
+                // Попытка извлечь информацию о производителе и продукте из сырых данных
+                // Согласно спецификации HAT:
+                // - Смещение 8-9: Идентификатор производителя
+                // - Позиции 16+ могут содержать данные атомов, включая имена
+                let vendor_id = if total_bytes_read >= 10 {
+                    format!("Vendor ID: {:02X}{:02X}", buffer[8], buffer[9])
+                } else {
+                    "Unknown Vendor".to_string()
+                };
+                
+                // Попытаемся найти строки ASCII в данных для имен
+                let mut product_name = "Unknown HAT Product".to_string();
+                let mut vendor_name = vendor_id.clone();
+                
+                // Ищем последовательности ASCII в буфере, которые могут быть именами
+                for i in 16..total_bytes_read.saturating_sub(4) {
+                    // Проверяем только если текущий байт - печатаемый ASCII
+                    if buffer[i] >= 32 && buffer[i] <= 126 {
+                        let mut seq_len = 1;
+                        // Проверяем следующие байты, пока не найдем не-ASCII или нулевой байт
+                        while i + seq_len < total_bytes_read && 
+                              buffer[i + seq_len] >= 32 && 
+                              buffer[i + seq_len] <= 126 {
+                            seq_len += 1;
+                        }
+                        
+                        // Если нашли достаточно длинную последовательность, это может быть имя
+                        if seq_len >= 4 {
+                            let text = String::from_utf8_lossy(&buffer[i..i+seq_len]).to_string();
+                            if product_name == "Unknown HAT Product" {
+                                product_name = text;
+                            } else if text.len() > product_name.len() {
+                                // Если нашли более длинную строку, она может быть более информативной
+                                vendor_name = product_name;
+                                product_name = text;
+                            }
                         }
                     }
                 }
+
+                // Попытка распарсить заголовок атома напрямую
+                if has_atom_structure {
+                    eprintln!("Attempting manual atom header parsing:");
+                    // Атомы в HAT EEPROM следуют за 4-байтовой сигнатурой "R-Pi"
+                    let mut offset = 4;
+                    while offset + 8 <= total_bytes_read {
+                        let atom_type = buffer[offset];
+                        let atom_count = buffer[offset + 4];
+                        
+                        eprintln!("  Atom at offset {}: type={}, count={}", offset, atom_type, atom_count);
+                        
+                        // Переходим к следующему атому, если есть
+                        if atom_count == 0 {
+                            break; // Недействительная длина атома
+                        }
+                        offset += 8 + atom_count as usize;
+                    }
+                }
+                
+                // Генерируем UUID из доступных байтов или используем смещение в буфере
+                let uuid_str = if total_bytes_read >= 32 {
+                    format!(
+                        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+                        buffer[16], buffer[17], buffer[18], buffer[19],
+                        buffer[20], buffer[21], buffer[22], buffer[23],
+                        buffer[24], buffer[25], buffer[26], buffer[27],
+                        buffer[28], buffer[29], buffer[30], buffer[31]
+                    )
+                } else {
+                    "00000000-0000-0000-0000-000000000000".to_string()
+                };
+                
+                // Получаем количество устройств на этой шине
+                let all_buses = crate::detect::detect_all_i2c_devices();
+                let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
+                
+                eprintln!("Fallback HAT parsing recovered the following:");
+                eprintln!("  Vendor: {}", vendor_name);
+                eprintln!("  Product: {}", product_name);
+                eprintln!("  UUID: {}", uuid_str);
+                
+                return Some(EhatromData {
+                    vendor_name: Some(vendor_name),
+                    product_name: Some(product_name),
+                    product_uuid: Some(uuid_str),
+                    bus_path: Some(bus.to_string()),
+                    other_devices: Some(devices_count),
+                });
             }
         }
-        Err(e) => {
-            eprintln!("Error reading from HAT EEPROM on {bus}: {e:?}");
+    } else {
+        eprintln!("No valid HAT signature found on {bus}, but device responded at address 0x{:02X}", addr);
+        
+        // Даже если нет правильной сигнатуры, устройство есть на шине I2C
+        // Может быть другой формат или нестандартная EEPROM
+        
+        // Попытаемся найти строки ASCII в данных для имен
+        let mut found_texts = Vec::new();
+        
+        // Ищем последовательности ASCII в буфере
+        for i in 0..total_bytes_read.saturating_sub(4) {
+            // Проверяем только если текущий байт - печатаемый ASCII
+            if buffer[i] >= 32 && buffer[i] <= 126 {
+                let mut seq_len = 1;
+                // Проверяем следующие байты, пока не найдем не-ASCII или нулевой байт
+                while i + seq_len < total_bytes_read && 
+                      buffer[i + seq_len] >= 32 && 
+                      buffer[i + seq_len] <= 126 {
+                    seq_len += 1;
+                }
+                
+                // Если нашли достаточно длинную последовательность, добавляем её
+                if seq_len >= 4 {
+                    let text = String::from_utf8_lossy(&buffer[i..i+seq_len]).to_string();
+                    found_texts.push(text);
+                }
+            }
         }
+        
+        // Сортируем найденные строки по длине (длинные в начале)
+        found_texts.sort_by(|a, b| b.len().cmp(&a.len()));
+        
+        // Выбираем лучшие кандидаты для имени продукта и производителя
+        let product_name = if !found_texts.is_empty() {
+            found_texts.remove(0)
+        } else {
+            "Unknown I2C EEPROM".to_string()
+        };
+        
+        let vendor_name = if !found_texts.is_empty() {
+            found_texts.remove(0)
+        } else {
+            "Unknown vendor".to_string()
+        };
+        
+        // Получаем количество устройств на этой шине
+        let all_buses = crate::detect::detect_all_i2c_devices();
+        let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
+        
+        eprintln!("Extracted text from non-HAT EEPROM:");
+        eprintln!("  Vendor: {}", vendor_name);
+        eprintln!("  Product: {}", product_name);
+        
+        return Some(EhatromData {
+            vendor_name: Some(vendor_name),
+            product_name: Some(product_name),
+            product_uuid: Some("00000000-0000-0000-0000-000000000000".to_string()),
+            bus_path: Some(bus.to_string()),
+            other_devices: Some(devices_count),
+        });
     }
 
     None
