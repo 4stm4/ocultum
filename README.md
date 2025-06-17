@@ -7,7 +7,6 @@ A project for working with the SSD1306 OLED display on Raspberry Pi Zero 2W usin
 ## Subdirectories
 
 - **ocultum** – main application for displaying text on the OLED screen.
-- **ehatrom** – library for creating and processing EEPROM images for Raspberry Pi HAT.
 - **sim800rs** – experimental library for interacting with SIM800 GSM/GPRS modules via UART.
 
 ## Building and Running
