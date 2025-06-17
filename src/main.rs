@@ -19,9 +19,23 @@ impl embedded_hal::delay::DelayNs for Delay {
 
 fn main() {
     eprintln!("Ocultum: Initialization...");
-    eprintln!("Using ehatrom library for HAT data");
+    eprintln!("Using ehatrom library for HAT data and I2C device detection");
 
-    if let Some((bus, address)) = detect::detect_display_i2c(9) {
+    // Используем функцию для поиска всех доступных шин I2C и устройств на них
+    let bus_devices = detect::detect_all_i2c_devices();
+
+    if bus_devices.is_empty() {
+        eprintln!("No I2C buses with devices detected!");
+    } else {
+        eprintln!("Found {} I2C buses with devices:", bus_devices.len());
+        for (bus, devices) in &bus_devices {
+            eprintln!("  Bus {}: {} devices: {:?}", bus, devices.len(), devices);
+        }
+    }
+
+    // Пытаемся обнаружить дисплей на всех доступных шинах
+    if let Some((bus, address)) = detect::detect_display_i2c(20) {
+        // Увеличиваем максимальный номер шины для поиска
         eprintln!("Automatically detected display on I2C-{bus} at address 0x{address:02X}");
         let i2c_path = format!("/dev/i2c-{bus}");
         match I2cdev::new(&i2c_path) {
@@ -32,28 +46,48 @@ fn main() {
             }
             Err(e) => {
                 eprintln!("ERROR: Failed to open I2C device {i2c_path}: {e:?}");
+                try_fallback_display();
             }
         }
     } else {
-        eprintln!("Failed to automatically detect display, trying /dev/i2c-1");
+        eprintln!("Failed to automatically detect display");
+        try_fallback_display();
+    }
+}
 
-        let default_address = detect::SSD1306_COMMON_ADDRESSES[0];
+// Функция для попытки подключения к дисплею на стандартных шинах
+fn try_fallback_display() {
+    eprintln!("Trying fallback display connections...");
 
-        match I2cdev::new("/dev/i2c-1") {
+    // Список стандартных шин для Raspberry Pi
+    let standard_buses = ["/dev/i2c-1", "/dev/i2c-0"];
+    let default_address = detect::SSD1306_COMMON_ADDRESSES[0];
+
+    for &bus_path in &standard_buses {
+        eprintln!("Trying to connect to display on {bus_path}");
+        match I2cdev::new(bus_path) {
             Ok(i2c) => {
-                eprintln!("I2C device /dev/i2c-1 successfully opened");
+                eprintln!("I2C device {bus_path} successfully opened");
                 let delay = Delay;
                 ssd1306::init_oled(i2c, delay, default_address);
+                return; // Успешно подключились к дисплею
             }
             Err(e) => {
-                eprintln!("ERROR: Failed to open I2C device /dev/i2c-1: {e:?}");
-                eprintln!("Check I2C device path and access rights");
-
-                eprintln!("I2C-1 bus scan results:");
-                eprintln!("{}", detect::scan_i2c_bus(1));
+                eprintln!("ERROR: Failed to open I2C device {bus_path}: {e:?}");
+                continue; // Пробуем следующую шину
             }
         }
-
-        eprint!("Program execution completed");
     }
+
+    // Если не удалось подключиться к дисплею, сканируем шины для отладки
+    eprintln!("Failed to connect to display on standard buses");
+    eprintln!("I2C bus scan results:");
+
+    for i in 0..2 {
+        eprintln!("I2C-{i} bus scan:");
+        eprintln!("{}", detect::scan_i2c_bus(i));
+    }
+
+    eprintln!("Check I2C device paths and access rights");
+    eprintln!("Program execution completed with errors");
 }
