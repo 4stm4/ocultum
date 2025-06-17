@@ -106,9 +106,9 @@ dependencies = [
 
 [[package]]
 name = "ehatrom"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b41869cd91bc793a680946933033a33776c3ba8fb2c8904a1922def8750fd9a"
+checksum = "ced11ffe1a4a53050115e82e52c5435c28f46fd9887eead35867bbbd6be20f2f"
 dependencies = [
  "i2cdev",
 ]

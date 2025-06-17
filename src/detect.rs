@@ -8,7 +8,7 @@ use std::fs;
 pub use linux_embedded_hal::I2cdev;
 
 #[cfg(not(target_os = "linux"))]
-// Заглушка для I2cdev при компиляции на не-Linux платформах
+// Mock implementation for I2cdev when compiling on non-Linux platforms
 pub struct I2cdev;
 
 #[cfg(not(target_os = "linux"))]
@@ -45,12 +45,12 @@ impl embedded_hal::i2c::I2c for I2cdev {
     }
 }
 
-/// Константы адресов для распространенных I2C устройств
+/// Constants for common I2C device addresses
 pub const SSD1306_COMMON_ADDRESSES: [u8; 2] = [0x3C, 0x3D];
-/// Стандартный адрес HAT EEPROM на Raspberry Pi
+/// Standard address for HAT EEPROM on Raspberry Pi
 #[allow(dead_code)]
 pub const HAT_EEPROM_ADDRESS: u8 = 0x50;
-/// Предопределенные типы устройств и их адреса для упрощения идентификации
+/// Predefined device types and their addresses for easier identification
 pub const KNOWN_I2C_DEVICES: &[(&str, u8)] = &[
     ("SSD1306 Display", 0x3C),
     ("SSD1306 Display", 0x3D),
@@ -64,16 +64,16 @@ pub const KNOWN_I2C_DEVICES: &[(&str, u8)] = &[
     ("DS3231 RTC", 0x68),
 ];
 
-/// Обнаруживает все доступные шины I2C в системе
+/// Detects all available I2C buses in the system
 ///
-/// На Linux-системах будет использована встроенная реализация для поиска устройств в /dev.
-/// На других платформах возвращаются тестовые данные.
+/// On Linux systems, the built-in implementation will be used to find devices in /dev.
+/// On other platforms, test data is returned.
 pub fn find_all_i2c_buses() -> Vec<String> {
     #[cfg(target_os = "linux")]
     {
         let mut buses = Vec::new();
 
-        // Попытка найти все устройства I2C в /dev
+        // Try to find all I2C devices in /dev
         if let Ok(entries) = fs::read_dir("/dev") {
             for entry in entries.filter_map(Result::ok) {
                 let path = entry.path();
@@ -92,17 +92,17 @@ pub fn find_all_i2c_buses() -> Vec<String> {
 
     #[cfg(not(target_os = "linux"))]
     {
-        // Возвращаем имитацию шин для не-Linux систем
+        // Return simulated buses for non-Linux systems
         let buses = vec!["/dev/i2c-0".to_string(), "/dev/i2c-1".to_string()];
         buses
     }
 }
 
 pub fn detect_display_i2c(max_bus: u8) -> Option<(u8, u8)> {
-    // Сначала пробуем использовать автоматическое обнаружение шин
+    // First try using automatic bus detection
     let i2c_buses = find_all_i2c_buses();
 
-    // Пробуем обнаружить дисплей на всех найденных шинах
+    // Try to detect display on all found buses
     for bus_path in &i2c_buses {
         if let Some(bus_num) = bus_path
             .strip_prefix("/dev/i2c-")
@@ -126,7 +126,7 @@ pub fn detect_display_i2c(max_bus: u8) -> Option<(u8, u8)> {
         }
     }
 
-    // Если автоматическое обнаружение не сработало, используем старый метод
+    // If automatic detection didn't work, use the old method
     for bus in 0..=max_bus {
         let i2c_path = format!("/dev/i2c-{bus}");
         match I2cdev::new(&i2c_path) {

@@ -21,7 +21,7 @@ fn main() {
     eprintln!("Ocultum: Initialization...");
     eprintln!("Using ehatrom library for HAT data and I2C device detection");
 
-    // Используем функцию для поиска всех доступных шин I2C и устройств на них
+    // Find all available I2C buses and devices on them
     let bus_devices = detect::detect_all_i2c_devices();
 
     if bus_devices.is_empty() {
@@ -33,9 +33,9 @@ fn main() {
         }
     }
 
-    // Пытаемся обнаружить дисплей на всех доступных шинах
+    // Try to detect display on all available buses
     if let Some((bus, address)) = detect::detect_display_i2c(20) {
-        // Увеличиваем максимальный номер шины для поиска
+        // Increased maximum bus number for search
         eprintln!("Automatically detected display on I2C-{bus} at address 0x{address:02X}");
         let i2c_path = format!("/dev/i2c-{bus}");
         match I2cdev::new(&i2c_path) {
@@ -55,11 +55,11 @@ fn main() {
     }
 }
 
-// Функция для попытки подключения к дисплею на стандартных шинах
+// Function to attempt display connection on standard buses
 fn try_fallback_display() {
     eprintln!("Trying fallback display connections...");
 
-    // Список стандартных шин для Raspberry Pi
+    // List of standard buses for Raspberry Pi
     let standard_buses = ["/dev/i2c-1", "/dev/i2c-0"];
     let default_address = detect::SSD1306_COMMON_ADDRESSES[0];
 
@@ -70,16 +70,16 @@ fn try_fallback_display() {
                 eprintln!("I2C device {bus_path} successfully opened");
                 let delay = Delay;
                 ssd1306::init_oled(i2c, delay, default_address);
-                return; // Успешно подключились к дисплею
+                return; // Successfully connected to the display
             }
             Err(e) => {
                 eprintln!("ERROR: Failed to open I2C device {bus_path}: {e:?}");
-                continue; // Пробуем следующую шину
+                continue; // Try the next bus
             }
         }
     }
 
-    // Если не удалось подключиться к дисплею, сканируем шины для отладки
+    // If failed to connect to display, scan buses for debugging
     eprintln!("Failed to connect to display on standard buses");
     eprintln!("I2C bus scan results:");
 
