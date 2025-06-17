@@ -192,24 +192,24 @@ pub fn scan_i2c_bus(bus: u8) -> String {
     result
 }
 
-/// Обнаруживает все доступные устройства на указанной шине I2C
+/// Detects all available devices on the specified I2C bus
 ///
-/// Сканирует все возможные адреса I2C (от 0x08 до 0x77, исключая зарезервированные)
-/// и возвращает список адресов устройств, которые ответили на запрос.
+/// Scans all possible I2C addresses (from 0x08 to 0x77, excluding reserved ones)
+/// and returns a list of device addresses that responded to the request.
 ///
-/// # Аргументы
+/// # Arguments
 ///
-/// * `bus_path` - Путь к шине I2C (например, "/dev/i2c-1")
+/// * `bus_path` - Path to the I2C bus (e.g., "/dev/i2c-1")
 ///
-/// # Возвращаемое значение
+/// # Returns
 ///
-/// Вектор адресов (u8) найденных устройств на указанной шине.
+/// A vector of addresses (u8) of devices found on the specified bus.
 pub fn find_devices_on_bus(bus_path: &str) -> Vec<u8> {
     let mut devices = Vec::new();
 
     match I2cdev::new(bus_path) {
         Ok(mut i2c) => {
-            // Сканируем все возможные адреса I2C (от 0x08 до 0x77, исключая зарезервированные)
+            // Scan all possible I2C addresses (from 0x08 to 0x77, excluding reserved ones)
             for addr in 0x08..=0x77 {
                 let mut buf = [0u8; 1];
                 let mut ops = [embedded_hal::i2c::Operation::Read(&mut buf)];
@@ -226,19 +226,19 @@ pub fn find_devices_on_bus(bus_path: &str) -> Vec<u8> {
     devices
 }
 
-/// Сканирует все шины I2C и возвращает список всех найденных устройств
+/// Scans all I2C buses and returns a list of all found devices
 ///
-/// Для каждой найденной шины I2C выполняет сканирование всех возможных
-/// адресов и возвращает список пар (путь_к_шине, список_адресов_устройств).
+/// For each discovered I2C bus, it scans all possible
+/// addresses and returns a list of pairs (bus_path, list_of_device_addresses).
 ///
-/// # Возвращаемое значение
+/// # Returns
 ///
-/// Вектор кортежей (String, `Vec<u8>`), где первый элемент - путь к шине I2C,
-/// а второй - вектор адресов устройств, найденных на этой шине.
+/// A vector of tuples (String, `Vec<u8>`), where the first element is the path to the I2C bus,
+/// and the second is a vector of device addresses found on that bus.
 pub fn detect_all_i2c_devices() -> Vec<(String, Vec<u8>)> {
     let mut result = Vec::new();
 
-    // Получаем список всех доступных шин I2C
+    // Get a list of all available I2C buses
     let buses = find_all_i2c_buses();
 
     for bus in buses {
@@ -251,15 +251,15 @@ pub fn detect_all_i2c_devices() -> Vec<(String, Vec<u8>)> {
     result
 }
 
-/// Возвращает читаемое имя устройства по его адресу I2C, если оно известно
+/// Returns the readable name of a device by its I2C address, if known
 ///
-/// # Аргументы
+/// # Arguments
 ///
-/// * `addr` - Адрес I2C устройства
+/// * `addr` - I2C device address
 ///
-/// # Возвращаемое значение
+/// # Returns
 ///
-/// Опциональная строка с названием устройства, если адрес соответствует известному устройству
+/// Optional string with the device name, if the address corresponds to a known device
 pub fn get_device_name_by_address(addr: u8) -> Option<&'static str> {
     KNOWN_I2C_DEVICES
         .iter()

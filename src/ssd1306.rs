@@ -426,10 +426,10 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
             Err(e) => {
                 eprintln!("Error parsing EEPROM data from {bus}: {e:?}");
 
-                // Данные HAT EEPROM доступны, но их формат неправильный или неполный
-                // Попробуем извлечь как можно больше информации из сырых данных
+                // HAT EEPROM data is available, but its format is incorrect or incomplete
+                // Try to extract as much information as possible from the raw data
 
-                // Вывести больше байтов в диагностических целях
+                // Output more bytes for diagnostic purposes
                 let diag_bytes = std::cmp::min(128, total_bytes_read);
                 let hex_bytes: Vec<String> = buffer[0..diag_bytes]
                     .iter()
@@ -441,7 +441,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     hex_bytes.join(", ")
                 );
 
-                // Выводим также ASCII представление для лучшего анализа
+                // Also output ASCII representation for better analysis
                 let ascii_bytes: String = buffer[0..diag_bytes]
                     .iter()
                     .map(|&b| {
@@ -454,7 +454,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     .collect();
                 eprintln!("ASCII representation: [{ascii_bytes}]");
 
-                // Попытка проанализировать формат данных и структуру атома
+                // Attempt to analyze data format and atom structure
                 eprintln!("Analyzing HAT data format for error diagnostics:");
                 if total_bytes_read >= 8 {
                     eprintln!(
@@ -470,11 +470,11 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     );
                 }
 
-                // Проверка на наличие атомарной структуры
-                // Обычно после заголовка "R-Pi" идут идентификаторы атомов
+                // Check for atomic structure
+                // Usually after the "R-Pi" header come atom identifiers
                 let mut has_atom_structure = false;
                 if total_bytes_read >= 12 {
-                    // Проверяем байты 4-7 для идентификатора АТОМА и байты 8-11 для длины
+                    // Check bytes 4-7 for ATOM identifier and bytes 8-11 for length
                     eprintln!(
                         "  Possible atom header at offset 4: [{:02X}, {:02X}, {:02X}, {:02X}]",
                         buffer[4], buffer[5], buffer[6], buffer[7]
@@ -484,7 +484,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                         buffer[8], buffer[9], buffer[10], buffer[11]
                     );
 
-                    // Простая эвристика для проверки формата атома
+                    // Simple heuristic to check atom format
                     if buffer[4] < 16
                         && buffer[5] == 0
                         && buffer[6] == 0
@@ -501,26 +501,26 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     }
                 }
 
-                // Попытка извлечь информацию о производителе и продукте из сырых данных
-                // Согласно спецификации HAT:
-                // - Смещение 8-9: Идентификатор производителя
-                // - Позиции 16+ могут содержать данные атомов, включая имена
+                // Attempt to extract vendor and product information from raw data
+                // According to HAT specification:
+                // - Offset 8-9: Vendor identifier
+                // - Positions 16+ may contain atom data, including names
                 let vendor_id = if total_bytes_read >= 10 {
                     format!("Vendor ID: {:02X}{:02X}", buffer[8], buffer[9])
                 } else {
                     "Unknown Vendor".to_string()
                 };
 
-                // Попытаемся найти строки ASCII в данных для имен
+                // Let's try to find ASCII strings in data for names
                 let mut product_name = "Unknown HAT Product".to_string();
                 let mut vendor_name = vendor_id.clone();
 
-                // Ищем последовательности ASCII в буфере, которые могут быть именами
+                // Look for ASCII sequences in the buffer that could be names
                 for i in 16..total_bytes_read.saturating_sub(4) {
-                    // Проверяем только если текущий байт - печатаемый ASCII
+                    // Check only if the current byte is printable ASCII
                     if buffer[i] >= 32 && buffer[i] <= 126 {
                         let mut seq_len = 1;
-                        // Проверяем следующие байты, пока не найдем не-ASCII или нулевой байт
+                        // Check the following bytes until we find a non-ASCII or zero byte
                         while i + seq_len < total_bytes_read
                             && buffer[i + seq_len] >= 32
                             && buffer[i + seq_len] <= 126
@@ -528,13 +528,13 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                             seq_len += 1;
                         }
 
-                        // Если нашли достаточно длинную последовательность, это может быть имя
+                        // If we found a long enough sequence, it might be a name
                         if seq_len >= 4 {
                             let text = String::from_utf8_lossy(&buffer[i..i + seq_len]).to_string();
                             if product_name == "Unknown HAT Product" {
                                 product_name = text;
                             } else if text.len() > product_name.len() {
-                                // Если нашли более длинную строку, она может быть более информативной
+                                // If we found a longer string, it might be more informative
                                 vendor_name = product_name;
                                 product_name = text;
                             }
@@ -542,10 +542,10 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     }
                 }
 
-                // Попытка распарсить заголовок атома напрямую
+                // Attempt to parse atom header directly
                 if has_atom_structure {
                     eprintln!("Attempting manual atom header parsing:");
-                    // Атомы в HAT EEPROM следуют за 4-байтовой сигнатурой "R-Pi"
+                    // Atoms in HAT EEPROM follow the 4-byte signature "R-Pi"
                     let mut offset = 4;
                     while offset + 8 <= total_bytes_read {
                         let atom_type = buffer[offset];
@@ -555,15 +555,15 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                             "  Atom at offset {offset}: type={atom_type}, count={atom_count}"
                         );
 
-                        // Переходим к следующему атому, если есть
+                        // Move to next atom if available
                         if atom_count == 0 {
-                            break; // Недействительная длина атома
+                            break; // Invalid atom length
                         }
                         offset += 8 + atom_count as usize;
                     }
                 }
 
-                // Генерируем UUID из доступных байтов или используем смещение в буфере
+                // Generate UUID from available bytes or use buffer offset
                 let uuid_str = if total_bytes_read >= 32 {
                     format!(
                         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
@@ -588,7 +588,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     "00000000-0000-0000-0000-000000000000".to_string()
                 };
 
-                // Получаем количество устройств на этой шине
+                // Get the number of devices on this bus
                 let all_buses = crate::detect::detect_all_i2c_devices();
                 let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
 
@@ -611,18 +611,18 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
             "No valid HAT signature found on {bus}, but device responded at address 0x{addr:02X}"
         );
 
-        // Даже если нет правильной сигнатуры, устройство есть на шине I2C
-        // Может быть другой формат или нестандартная EEPROM
+        // Even if there is no correct signature, the device is present on I2C bus
+        // Could be a different format or non-standard EEPROM
 
-        // Попытаемся найти строки ASCII в данных для имен
+        // Let's try to find ASCII strings in data for names
         let mut found_texts = Vec::new();
 
-        // Ищем последовательности ASCII в буфере
+        // Look for ASCII sequences in the buffer
         for i in 0..total_bytes_read.saturating_sub(4) {
-            // Проверяем только если текущий байт - печатаемый ASCII
+            // Check only if the current byte is printable ASCII
             if buffer[i] >= 32 && buffer[i] <= 126 {
                 let mut seq_len = 1;
-                // Проверяем следующие байты, пока не найдем не-ASCII или нулевой байт
+                // Check following bytes until we find a non-ASCII or zero byte
                 while i + seq_len < total_bytes_read
                     && buffer[i + seq_len] >= 32
                     && buffer[i + seq_len] <= 126
@@ -630,7 +630,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     seq_len += 1;
                 }
 
-                // Если нашли достаточно длинную последовательность, добавляем её
+                // If we found a long enough sequence, add it
                 if seq_len >= 4 {
                     let text = String::from_utf8_lossy(&buffer[i..i + seq_len]).to_string();
                     found_texts.push(text);
@@ -638,7 +638,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
             }
         }
 
-        // Сортируем найденные строки по длине (длинные в начале)
+        // Sort found strings by length (longest first)
         found_texts.sort_by_key(|b| std::cmp::Reverse(b.len()));
 
         // Выбираем лучшие кандидаты для имени продукта и производителя
@@ -672,7 +672,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
     }
 }
 
-/// Отображает информацию о найденных I2C устройствах на OLED дисплее
+/// Display information about found I2C devices on OLED display
 pub fn display_i2c_devices_info<D>(disp: &mut D)
 where
     D: DrawTarget<Color = BinaryColor>,
@@ -683,13 +683,13 @@ where
         .text_color(BinaryColor::On)
         .build();
 
-    // Очищаем дисплей
+    // Clear display
     if disp.clear(BinaryColor::Off).is_err() {
         eprintln!("ERROR: Failed to clear OLED display");
         return;
     }
 
-    // Отображаем заголовок
+    // Display header
     if Text::with_baseline(
         "I2C Device Scanner",
         Point::new(0, 8),
@@ -706,7 +706,7 @@ where
     let bus_devices = crate::detect::detect_all_i2c_devices();
 
     if bus_devices.is_empty() {
-        // Если устройств не найдено
+        // If no devices found
         if Text::with_baseline(
             "No I2C devices found",
             Point::new(0, 18),
@@ -719,14 +719,14 @@ where
             eprintln!("ERROR: Failed to draw on OLED display");
         }
     } else {
-        // Отображаем информацию о найденных устройствах
+        // Display information about found devices
         let mut y_pos = 18;
         let mut total_devices = 0;
 
         for (_idx, (bus, devices)) in bus_devices.iter().enumerate().take(3) {
-            // Ограничиваем 3 шинами
+            // Limit to 3 buses
             if y_pos > 50 {
-                break; // Не выходим за пределы дисплея
+                break; // Don't go beyond the display
             }
 
             let bus_name = if let Some(name) = bus.strip_prefix("/dev/") {
@@ -746,10 +746,10 @@ where
             y_pos += 10;
             total_devices += devices.len();
 
-            // Показываем до 2 устройств с их названиями для каждой шины
+            // Show up to 2 devices with their names for each bus
             for &addr in devices.iter().take(2) {
                 if y_pos > 50 {
-                    break; // Не выходим за пределы дисплея
+                    break; // Don't go beyond the display
                 }
 
                 let device_name = match crate::detect::get_device_name_by_address(addr) {
@@ -772,7 +772,7 @@ where
                 y_pos += 10;
             }
 
-            // Если на шине больше 2 устройств, показываем "... и еще N"
+            // If there are more than 2 devices on the bus, show "... and N more"
             if devices.len() > 2 {
                 let more_text = format!("...and {} more", devices.len() - 2);
                 if Text::with_baseline(&more_text, Point::new(5, y_pos), text_style, Baseline::Top)
@@ -785,7 +785,7 @@ where
             }
         }
 
-        // Отображаем общее количество найденных устройств
+        // Display the total number of devices found
         if (bus_devices.len() > 3 || y_pos > 50)
             && Text::with_baseline(
                 &format!("Total: {total_devices} devices"),
