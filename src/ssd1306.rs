@@ -26,19 +26,19 @@ where
         return;
     }
 
-    // Сначала отображаем общую информацию о найденных I2C устройствах
+    // First display general information about detected I2C devices
     display_i2c_devices_info(&mut disp);
 
-    // Ждем 5 секунд, чтобы пользователь мог прочитать информацию
+    // Wait 5 seconds so the user can read the information
     #[cfg(target_os = "linux")]
     {
         std::thread::sleep(std::time::Duration::from_secs(5));
     }
 
-    // Затем отображаем данные HAT EEPROM
+    // Then display HAT EEPROM data
     display_ehatrom_info(&mut disp, address);
 
-    // Обновляем содержимое дисплея
+    // Update display content
     if let Err(e) = disp.flush() {
         eprintln!("ERROR: Failed to flush OLED display: {e:?}");
         return;
@@ -57,7 +57,7 @@ where
         .text_color(BinaryColor::On)
         .build();
 
-    // Отображаем заголовок
+    // Display header
     if Text::with_baseline("Ocultum OLED", Point::new(0, 8), text_style, Baseline::Top)
         .draw(disp)
         .is_err()
@@ -65,7 +65,7 @@ where
         eprintln!("ERROR: Failed to draw header on OLED display");
     }
 
-    // Отображаем сообщение о сканировании
+    // Display scanning message
     if Text::with_baseline(
         "Scanning I2C buses...",
         Point::new(0, 18),
@@ -81,12 +81,12 @@ where
     // Attempt to get ehatrom data
     let ehatrom_data = get_ehatrom_data();
 
-    // Очищаем дисплей перед отображением результатов
+    // Clear display before showing results
     if disp.clear(BinaryColor::Off).is_err() {
         eprintln!("ERROR: Failed to clear OLED display");
     }
 
-    // Снова отображаем заголовок
+    // Display header again
     if Text::with_baseline("Ocultum OLED", Point::new(0, 8), text_style, Baseline::Top)
         .draw(disp)
         .is_err()
@@ -105,13 +105,13 @@ where
         None => "No UUID found".to_string(),
     };
 
-    // Добавляем информацию о шине I2C
+    // Add I2C bus information
     let bus_info = match ehatrom_data.bus_path {
         Some(bus) => format!("Bus: {bus}"),
         None => "No I2C bus found".to_string(),
     };
 
-    // Добавляем информацию о других устройствах I2C
+    // Add information about other I2C devices
     let devices_info = match ehatrom_data.other_devices {
         Some(count) if count > 0 => format!("Found {count} I2C devices"),
         _ => "No other I2C devices".to_string(),
@@ -137,20 +137,20 @@ where
     }
 }
 
-/// Структура для хранения данных из HAT EEPROM
+/// Structure for storing HAT EEPROM data
 struct EhatromData {
     vendor_name: Option<String>,
     product_name: Option<String>,
     product_uuid: Option<String>,
     bus_path: Option<String>,
-    other_devices: Option<usize>, // Количество других обнаруженных устройств I2C
+    other_devices: Option<usize>, // Number of other detected I2C devices
 }
 
-/// Читает все данные EEPROM и возвращает структуру с информацией
+/// Reads all EEPROM data and returns a structure with information
 fn get_ehatrom_data() -> EhatromData {
     #[cfg(target_os = "linux")]
     {
-        // Используем улучшенную функцию для обнаружения всех шин I2C и устройств на них
+        // Use improved function to detect all I2C buses and devices on them
         let bus_devices = crate::detect::detect_all_i2c_devices();
         let eeprom_addr = crate::detect::HAT_EEPROM_ADDRESS;
 
@@ -162,12 +162,12 @@ fn get_ehatrom_data() -> EhatromData {
             total_devices += devices.len();
         }
 
-        // Сначала ищем HAT EEPROM устройство на всех шинах
+        // First, search for HAT EEPROM device on all buses
         for (bus, devices) in &bus_devices {
             if devices.contains(&eeprom_addr) {
                 match read_ehatrom_from_bus(bus, eeprom_addr) {
                     Some(mut data) => {
-                        // Добавляем информацию о других устройствах
+                        // Add information about other devices
                         data.other_devices = Some(total_devices);
                         return data;
                     }
@@ -176,7 +176,7 @@ fn get_ehatrom_data() -> EhatromData {
             }
         }
 
-        // Если HAT EEPROM не обнаружен, но есть другие устройства, возвращаем информацию о них
+        // If HAT EEPROM is not detected, but there are other devices, return information about them
         if !bus_devices.is_empty() {
             let (first_bus, _first_devices) = &bus_devices[0];
             return EhatromData {
@@ -188,7 +188,7 @@ fn get_ehatrom_data() -> EhatromData {
             };
         }
 
-        // Если не удалось прочитать с любой шины, возвращаем пустые данные
+        // If couldn't read from any bus, return empty data
         EhatromData {
             vendor_name: None,
             product_name: None,
@@ -200,51 +200,68 @@ fn get_ehatrom_data() -> EhatromData {
 
     #[cfg(not(target_os = "linux"))]
     {
-        // На не-Linux платформах возвращаем тестовые данные
+        // On non-Linux platforms return test data
         EhatromData {
             vendor_name: Some("Simulated Vendor".to_string()),
             product_name: Some("Simulated Product".to_string()),
             product_uuid: Some("a1b2c3d4-e5f6-7890-abcd-ef1234567890".to_string()),
             bus_path: Some("/dev/i2c-0".to_string()),
-            other_devices: Some(3), // Имитируем наличие 3 устройств
+            other_devices: Some(3), // Simulate 3 devices
         }
     }
 }
 
-/// Читает данные EEPROM с указанной шины I2C с использованием функций ehatrom
+/// Reads EEPROM data from the specified I2C bus using ehatrom functions
 #[cfg(target_os = "linux")]
 fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
-    // Увеличиваем буфер до 512 байт для более надежного чтения
+    // Increase buffer to 512 bytes for more reliable reading
     let mut buffer = vec![0u8; 512];
 
-    // Адрес должен быть u16 для этой функции
+    // Address should be u16 for this function
     let addr_u16: u16 = addr.into();
 
-    // Пытаемся читать блоками по разным размерам для более надежного чтения
+    // Try to read in blocks of different sizes for more reliable reading
     let mut total_bytes_read = 0;
     let mut read_error = false;
 
-    // Попробуем несколько разных смещений и размеров блоков для чтения
+    // Try several different offsets and block sizes for reading
     for (offset, block_size) in [(0, 32), (0, 64), (0, 128), (0, 256), (0, 512)] {
         let mut temp_buffer = vec![0u8; block_size];
         match ehatrom::read_from_eeprom_i2c(&mut temp_buffer, bus, addr_u16, offset) {
             Ok(_) => {
-                // Считаем количество ненулевых байтов в буфере как прочитанные байты
-                let read_bytes = temp_buffer.iter().take_while(|&&b| b != 0).count();
+                // Determine the number of bytes that appear to be meaningful data
+                // HAT EEPROM may contain zero bytes in the middle of the data,
+                // so we just accept at least 128 bytes or the entire buffer
+                let read_bytes = if block_size <= 128 {
+                    // For small blocks take everything we read
+                    block_size
+                } else {
+                    // For large blocks, take either the block size or stop after 32 consecutive zero bytes
+                    let mut last_non_zero = 0;
+                    for (i, &byte) in temp_buffer.iter().enumerate() {
+                        if byte != 0 {
+                            last_non_zero = i;
+                        } else if i > last_non_zero + 32 {
+                            // Too many zeros in a row, probably end of data
+                            break;
+                        }
+                    }
+                    last_non_zero + 1
+                };
 
                 eprintln!(
                     "Read {read_bytes} bytes from offset {offset} (block size {block_size}) on {bus}"
                 );
 
-                // Если успешно прочитали больше данных, используем их
+                // If we successfully read more data, use it
                 if read_bytes > total_bytes_read {
                     total_bytes_read = read_bytes;
                     buffer[0..read_bytes].copy_from_slice(&temp_buffer[0..read_bytes]);
-                    // Если прочитали полный блок, возможно, есть еще данные
+                    // If we read a full block, there might be more data
                     if read_bytes == block_size && block_size < 512 {
                         continue;
                     } else {
-                        // Мы получили неполный блок или максимальный размер, данных больше нет
+                        // We got an incomplete block or maximum size, no more data
                         break;
                     }
                 }
@@ -254,12 +271,12 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                     "Error reading {block_size}-byte block at offset {offset} from HAT EEPROM on {bus}: {e:?}"
                 );
                 read_error = true;
-                // Продолжаем с другими параметрами
+                // Continue with other parameters
             }
         }
     }
 
-    // Если ничего не смогли прочитать ни одним из способов
+    // If we couldn't read anything with any method
     if total_bytes_read == 0 {
         if read_error {
             eprintln!("Failed to read any data from HAT EEPROM on {bus} after multiple attempts");
@@ -271,9 +288,9 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
 
     eprintln!("Successfully read {total_bytes_read} bytes from HAT EEPROM on {bus}");
 
-    // Выводим больше байт для лучшей диагностики
+    // Output more bytes for better diagnostics
     if total_bytes_read > 0 {
-        // Первые 32 байта
+        // First 32 bytes
         let end_idx = std::cmp::min(32, total_bytes_read);
         let hex_bytes: Vec<String> = buffer[0..end_idx]
             .iter()
@@ -281,7 +298,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
             .collect();
         eprintln!("First 32 bytes: [{}]", hex_bytes.join(", "));
 
-        // Также выводим в ASCII формате, где это возможно
+        // Also output in ASCII format where possible
         let ascii_bytes: String = buffer[0..end_idx]
             .iter()
             .map(|&b| {
@@ -295,16 +312,16 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
         eprintln!("ASCII representation: [{ascii_bytes}]");
     }
 
-    // Проверяем разные форматы сигнатуры Raspberry Pi HAT
+    // Check different Raspberry Pi HAT signature formats
     let has_rpi_signature = if total_bytes_read >= 4 {
-        // Стандартная сигнатура "R-Pi" в ASCII
+        // Standard "R-Pi" signature in ASCII
         let has_ascii_sig = &buffer[0..4] == b"R-Pi";
 
-        // Шестнадцатеричное представление "R-Pi" [52, 2D, 50, 69]
+        // Hexadecimal representation of "R-Pi" [52, 2D, 50, 69]
         let has_hex_sig =
             buffer[0] == 0x52 && buffer[1] == 0x2D && buffer[2] == 0x50 && buffer[3] == 0x69;
 
-        // Альтернативные форматы, которые могут использоваться
+        // Alternative formats that might be used
         let has_alt_sig1 =
             buffer[0] == b'R' && buffer[1] == b'-' && buffer[2] == b'P' && buffer[3] == b'i';
 
@@ -316,13 +333,13 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
     if has_rpi_signature {
         eprintln!("Found valid HAT signature on {bus}");
 
-        // Пробуем парсить прочитанные данные с помощью ehatrom
+        // Try to parse read data using ehatrom
         match ehatrom::Eeprom::from_bytes(&buffer[0..total_bytes_read]) {
             Ok(eeprom) => {
-                // В версии 0.3.1 vendor_info - это поле, а не метод
+                // In version 0.3.1+, vendor_info is a field, not a method
                 let vendor_info = eeprom.vendor_info;
 
-                // Преобразуем байтовые массивы в строки, обрабатывая нулевые байты
+                // Convert byte arrays to strings, handling null bytes
                 let vendor_str = String::from_utf8_lossy(
                     &vendor_info
                         .vendor
@@ -343,7 +360,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                 )
                 .to_string();
 
-                // Форматируем UUID (16 байт) в строку
+                // Format UUID (16 bytes) into a string
                 let uuid_bytes = &vendor_info.uuid;
                 let uuid_str = format!(
                     "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
@@ -370,11 +387,11 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                 eprintln!("  Product: {product_str}");
                 eprintln!("  UUID: {uuid_str}");
 
-                // Получаем количество устройств на этой шине
+                // Get number of devices on this bus
                 let all_buses = crate::detect::detect_all_i2c_devices();
                 let devices_count = all_buses.iter().map(|(_, devices)| devices.len()).sum();
 
-                // Выводим информацию о пользовательских атомах для диагностики
+                // Output information about custom atoms for diagnostics
                 let custom_atoms = eeprom.custom_atoms;
                 if !custom_atoms.is_empty() {
                     eprintln!("  EEPROM contains {} custom atoms", custom_atoms.len());
@@ -402,7 +419,7 @@ fn read_ehatrom_from_bus(bus: &str, addr: u8) -> Option<EhatromData> {
                         product_str
                     }),
                     product_uuid: Some(uuid_str),
-                    bus_path: Some(bus.to_string()), // Сохраняем путь к шине
+                    bus_path: Some(bus.to_string()), // Save the bus path
                     other_devices: Some(devices_count),
                 })
             }
