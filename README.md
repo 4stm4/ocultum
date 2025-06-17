@@ -9,7 +9,14 @@ A project for working with the SSD1306 OLED display on Raspberry Pi Zero 2W usin
 - **ocultum** – main application for displaying text on the OLED screen.
 - **sim800rs** – experimental library for interacting with SIM800 GSM/GPRS modules via UART.
 
-## Building and Running
+## Dependencies
+
+The project now uses the following external libraries:
+- **ehatrom** (v0.3.0) - library for working with Raspberry Pi HAT EEPROM via I2C
+- **ssd1306** - library for controlling SSD1306 OLED displays
+- **embedded-graphics** - graphics library for embedded displays
+- **embedded-hal** - hardware abstraction layer for embedded systems
+- **linux-embedded-hal** - Linux implementation of embedded-hal
 
 ### Local Build on Raspberry Pi
 
@@ -52,6 +59,8 @@ or
 - Automatic detection of OLED displays on I2C buses
 - Scanning I2C buses for devices
 - Displaying text on the OLED screen
+- Reading and displaying Raspberry Pi HAT EEPROM data (vendor, product, and UUID information)
+- Shows detailed HAT information using ehatrom library
 
 ## Requirements
 
