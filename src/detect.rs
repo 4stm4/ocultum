@@ -48,6 +48,7 @@ impl embedded_hal::i2c::I2c for I2cdev {
 /// Константы адресов для распространенных I2C устройств
 pub const SSD1306_COMMON_ADDRESSES: [u8; 2] = [0x3C, 0x3D];
 /// Стандартный адрес HAT EEPROM на Raspberry Pi
+#[allow(dead_code)]
 pub const HAT_EEPROM_ADDRESS: u8 = 0x50;
 /// Предопределенные типы устройств и их адреса для упрощения идентификации
 pub const KNOWN_I2C_DEVICES: &[(&str, u8)] = &[
@@ -92,9 +93,10 @@ pub fn find_all_i2c_buses() -> Vec<String> {
     #[cfg(not(target_os = "linux"))]
     {
         // Возвращаем имитацию шин для не-Linux систем
-        let mut buses = Vec::new();
-        buses.push("/dev/i2c-0".to_string());
-        buses.push("/dev/i2c-1".to_string());
+        let buses = vec![
+            "/dev/i2c-0".to_string(),
+            "/dev/i2c-1".to_string()
+        ];
         buses
     }
 }
@@ -234,7 +236,7 @@ pub fn find_devices_on_bus(bus_path: &str) -> Vec<u8> {
 ///
 /// # Возвращаемое значение
 ///
-/// Вектор кортежей (String, Vec<u8>), где первый элемент - путь к шине I2C,
+/// Вектор кортежей (String, `Vec<u8>`), где первый элемент - путь к шине I2C,
 /// а второй - вектор адресов устройств, найденных на этой шине.
 pub fn detect_all_i2c_devices() -> Vec<(String, Vec<u8>)> {
     let mut result = Vec::new();
