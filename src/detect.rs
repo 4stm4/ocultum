@@ -93,10 +93,7 @@ pub fn find_all_i2c_buses() -> Vec<String> {
     #[cfg(not(target_os = "linux"))]
     {
         // Возвращаем имитацию шин для не-Linux систем
-        let buses = vec![
-            "/dev/i2c-0".to_string(),
-            "/dev/i2c-1".to_string()
-        ];
+        let buses = vec!["/dev/i2c-0".to_string(), "/dev/i2c-1".to_string()];
         buses
     }
 }
