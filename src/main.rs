@@ -1,29 +1,24 @@
-mod eeprom;
-mod ssd1306;
+mod adapters;
+mod core;
+mod ports;
 
-use crate::ssd1306::display_eeprom_info;
-use crate::ssd1306::set_eeprom;
+use crate::adapters::{ehatrom_adapter::EhatromAdapter, ssd1306_adapter::Ssd1306Adapter};
+use crate::core::service::OcultumService;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("Ocultum: Initialization...");
-    let (eeprom_path, eeprom_addr) = match eeprom::ddetect_eeprom_with_hat_id() {
-        Some(pair) => pair,
-        None => {
-            eprintln!("EEPROM HAT не найден!");
-            return;
-        }
-    };
-    eprintln!("Найден EEPROM HAT: {eeprom_path} addr=0x{eeprom_addr:02X}");
-    #[cfg(target_os = "linux")]
-    {
-        let eeprom_data = match eeprom::read_eeprom_data(&eeprom_path, eeprom_addr) {
-            Ok(data) => data,
-            Err(e) => {
-                eprintln!("Ошибка чтения EEPROM: {e:?}");
-                return;
-            }
-        };
-        set_eeprom(eeprom_data);
-        display_eeprom_info();
-    }
+
+    // Создаем адаптеры
+    let eeprom_adapter = EhatromAdapter::new();
+    let display_adapter = Ssd1306Adapter::new();
+    let detector_adapter = Ssd1306Adapter::new();
+
+    // Создаем сервис с dependency injection
+    let service = OcultumService::new(eeprom_adapter, display_adapter, detector_adapter);
+
+    // Запускаем основную логику
+    service.run()?;
+
+    eprintln!("Ocultum: Completed successfully!");
+    Ok(())
 }
