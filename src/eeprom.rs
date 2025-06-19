@@ -1,4 +1,5 @@
-use ehatrom::{Eeprom, EhatromError, find_i2c_devices, read_from_eeprom_i2c};
+use ehatrom::{Eeprom, EhatromError};
+use ehatrom::{find_i2c_devices, read_from_eeprom_i2c};
 
 pub fn ddetect_eeprom_with_hat_id() -> Option<(String, u16)> {
     let devices = find_i2c_devices();
