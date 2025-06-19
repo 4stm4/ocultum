@@ -1,10 +1,8 @@
 mod eeprom;
 mod ssd1306;
 
-#[cfg(target_os = "linux")]
-use crate::ssd1306::set_eeprom;
-#[cfg(target_os = "linux")]
 use crate::ssd1306::display_eeprom_info;
+use crate::ssd1306::set_eeprom;
 
 fn main() {
     eprintln!("Ocultum: Initialization...");
