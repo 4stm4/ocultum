@@ -20,7 +20,7 @@ pub fn set_eeprom(eeprom: Eeprom) {
 }
 
 pub fn display_eeprom_info() {
-    let (bus, address) = match detect_display(20) {
+    let (bus, _address) = match detect_display(20) {
         Some(pair) => pair,
         None => {
             eprintln!("Дисплей не найден!");
@@ -35,13 +35,12 @@ pub fn display_eeprom_info() {
             return;
         }
     };
-    let eeprom = unsafe {
-        match &LAST_EEPROM {
-            Some(e) => e,
-            None => {
-                eprintln!("Нет данных EEPROM для отображения!");
-                return;
-            }
+    let eeprom_val = unsafe { core::ptr::addr_of!(LAST_EEPROM).read() };
+    let eeprom = match &eeprom_val {
+        Some(e) => e,
+        None => {
+            eprintln!("Нет данных EEPROM для отображения!");
+            return;
         }
     };
     let interface = I2CDisplayInterface::new(i2c);
