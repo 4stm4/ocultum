@@ -7,13 +7,15 @@ license = "MIT"
 authors = ["Aleksei Zakharchenko <ehatrom@4stm4.ru>"]
 
 [dependencies]
+ehatrom = { version = "0.3.2", features = ["linux"] }
 embedded-graphics = "0.8.1"
 embedded-hal = "1.0.0"
 ssd1306 = "0.10.0"
-ehatrom = { version = "0.3.2", features = ["linux"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 linux-embedded-hal = "0.4.0"
+
+
 
 [profile.dev]
 panic = "abort"
