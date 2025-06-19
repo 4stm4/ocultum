@@ -1,4 +1,5 @@
 mod detect;
+mod eeprom;
 mod ssd1306;
 
 #[cfg(target_os = "linux")]
@@ -19,75 +20,40 @@ impl embedded_hal::delay::DelayNs for Delay {
 
 fn main() {
     eprintln!("Ocultum: Initialization...");
-    eprintln!("Using ehatrom library for HAT data and I2C device detection");
-
-    // Find all available I2C buses and devices on them
-    let bus_devices = detect::detect_all_i2c_devices();
-
-    if bus_devices.is_empty() {
-        eprintln!("No I2C buses with devices detected!");
-    } else {
-        eprintln!("Found {} I2C buses with devices:", bus_devices.len());
-        for (bus, devices) in &bus_devices {
-            eprintln!("  Bus {}: {} devices: {:?}", bus, devices.len(), devices);
+    // 1. Получаем путь и адрес EEPROM HAT
+    let (eeprom_path, eeprom_addr) = match eeprom::ddetect_eeprom_with_hat_id() {
+        Some(pair) => pair,
+        None => {
+            eprintln!("EEPROM HAT не найден!");
+            return;
         }
-    }
-
-    // Try to detect display on all available buses
-    if let Some((bus, address)) = detect::detect_display_i2c(20) {
-        // Increased maximum bus number for search
-        eprintln!("Automatically detected display on I2C-{bus} at address 0x{address:02X}");
-        let i2c_path = format!("/dev/i2c-{bus}");
-        match I2cdev::new(&i2c_path) {
-            Ok(i2c) => {
-                eprintln!("I2C device {i2c_path} successfully opened");
-                let delay = Delay;
-                ssd1306::init_oled(i2c, delay, address);
-            }
-            Err(e) => {
-                eprintln!("ERROR: Failed to open I2C device {i2c_path}: {e:?}");
-                try_fallback_display();
-            }
+    };
+    eprintln!("Найден EEPROM HAT: {eeprom_path} addr=0x{eeprom_addr:02X}");
+    // 2. Читаем данные EEPROM
+    let eeprom_data = match eeprom::read_eeprom_data(&eeprom_path, eeprom_addr) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Ошибка чтения EEPROM: {e:?}");
+            return;
         }
-    } else {
-        eprintln!("Failed to automatically detect display");
-        try_fallback_display();
-    }
-}
-
-// Function to attempt display connection on standard buses
-fn try_fallback_display() {
-    eprintln!("Trying fallback display connections...");
-
-    // List of standard buses for Raspberry Pi
-    let standard_buses = ["/dev/i2c-1", "/dev/i2c-0"];
-    let default_address = detect::SSD1306_COMMON_ADDRESSES[0];
-
-    for &bus_path in &standard_buses {
-        eprintln!("Trying to connect to display on {bus_path}");
-        match I2cdev::new(bus_path) {
-            Ok(i2c) => {
-                eprintln!("I2C device {bus_path} successfully opened");
-                let delay = Delay;
-                ssd1306::init_oled(i2c, delay, default_address);
-                return; // Successfully connected to the display
-            }
-            Err(e) => {
-                eprintln!("ERROR: Failed to open I2C device {bus_path}: {e:?}");
-                continue; // Try the next bus
-            }
+    };
+    // 3. Ищем дисплей
+    let (bus, address) = match detect::detect_display(20) {
+        Some(pair) => pair,
+        None => {
+            eprintln!("Дисплей не найден!");
+            return;
         }
-    }
-
-    // If failed to connect to display, scan buses for debugging
-    eprintln!("Failed to connect to display on standard buses");
-    eprintln!("I2C bus scan results:");
-
-    for i in 0..2 {
-        eprintln!("I2C-{i} bus scan:");
-        eprintln!("{}", detect::scan_i2c_bus(i));
-    }
-
-    eprintln!("Check I2C device paths and access rights");
-    eprintln!("Program execution completed with errors");
+    };
+    let i2c_path = format!("/dev/i2c-{bus}");
+    let i2c = match I2cdev::new(&i2c_path) {
+        Ok(i2c) => i2c,
+        Err(e) => {
+            eprintln!("Ошибка открытия I2C: {e:?}");
+            return;
+        }
+    };
+    let delay = Delay;
+    // 4. Выводим данные EEPROM на дисплей
+    ssd1306::display_eeprom_info(i2c, delay, address, &eeprom_data);
 }
